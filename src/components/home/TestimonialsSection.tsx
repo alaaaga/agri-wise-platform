@@ -11,7 +11,7 @@ const TestimonialsSection = () => {
   const testimonials = [
     {
       quote: language === 'en' 
-        ? 'The soil analysis service completely transformed my farm's productivity. Their expert recommendations were spot on!' 
+        ? "The soil analysis service completely transformed my farm's productivity. Their expert recommendations were spot on!" 
         : 'خدمة تحليل التربة حولت إنتاجية مزرعتي تمامًا. كانت توصيات الخبراء في محلها!',
       name: language === 'en' ? 'Ahmed Hassan' : 'أحمد حسن',
       role: language === 'en' ? 'Crop Farmer' : 'مزارع المحاصيل',
@@ -19,7 +19,7 @@ const TestimonialsSection = () => {
     },
     {
       quote: language === 'en' 
-        ? 'I've been using their livestock management consultancy for two years now and have seen a significant improvement in my animals' health.' 
+        ? "I've been using their livestock management consultancy for two years now and have seen a significant improvement in my animals' health." 
         : 'لقد استخدمت استشارات إدارة الثروة الحيوانية لمدة عامين الآن وقد شهدت تحسنًا كبيرًا في صحة حيواناتي.',
       name: language === 'en' ? 'Fatima Al-Sayed' : 'فاطمة السيد',
       role: language === 'en' ? 'Dairy Farm Owner' : 'صاحبة مزرعة ألبان',

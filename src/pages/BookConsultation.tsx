@@ -157,7 +157,7 @@ const BookConsultation = () => {
                           </p>
                           <p className="text-gray-600">
                             {language === 'en' 
-                              ? 'We'll contact you to confirm your appointment and collect any additional information.' 
+                              ? "We'll contact you to confirm your appointment and collect any additional information." 
                               : 'سنتصل بك لتأكيد موعدك وجمع أي معلومات إضافية.'}
                           </p>
                         </div>
@@ -234,7 +234,7 @@ const BookConsultation = () => {
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
-                              variant={"outline"}
+                              variant="outline"
                               className={cn(
                                 "w-full justify-start text-left font-normal",
                                 !date && "text-muted-foreground"
