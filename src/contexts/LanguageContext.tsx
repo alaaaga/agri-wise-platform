@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
 type Language = 'en' | 'ar';
@@ -155,11 +154,8 @@ interface LanguageProviderProps {
 }
 
 export const LanguageProvider = ({ children }: LanguageProviderProps) => {
-  // Default language - detect from browser or set to English
-  const [language, setLanguage] = useState<Language>(() => {
-    const userLanguage = navigator.language.split('-')[0] as Language;
-    return userLanguage === 'ar' ? 'ar' : 'en';
-  });
+  // تعيين اللغة العربية كلغة افتراضية
+  const [language, setLanguage] = useState<Language>('ar');
 
   const t = (key: string): string => {
     return translations[language][key as keyof typeof translations[typeof language]] || key;
