@@ -17,6 +17,12 @@ import NotFound from "./pages/NotFound";
 import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
 import LivestockService from "./pages/LivestockService";
+import CropCareService from "./pages/CropCareService";
+import SoilAnalysisService from "./pages/SoilAnalysisService";
+import AgriTechService from "./pages/AgriTechService";
+import Videos from "./pages/Videos";
+import CaseStudies from "./pages/CaseStudies";
+import AskUs from "./pages/AskUs";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +38,9 @@ const App = () => (
               <Route path="/" element={<Home />} />
               <Route path="/services" element={<Services />} />
               <Route path="/services/livestock" element={<LivestockService />} />
+              <Route path="/services/crop-care" element={<CropCareService />} />
+              <Route path="/services/soil-analysis" element={<SoilAnalysisService />} />
+              <Route path="/services/agri-tech" element={<AgriTechService />} />
               <Route path="/book" element={<BookConsultation />} />
               <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
@@ -39,6 +48,9 @@ const App = () => (
               <Route path="/account" element={<Account />} />
               <Route path="/content/articles" element={<Articles />} />
               <Route path="/content/articles/:id" element={<ArticleDetail />} />
+              <Route path="/content/videos" element={<Videos />} />
+              <Route path="/content/case-studies" element={<CaseStudies />} />
+              <Route path="/content/ask-us" element={<AskUs />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
