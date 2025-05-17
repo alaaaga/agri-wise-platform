@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,18 +7,53 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Book, MessageCircle, Calendar } from 'lucide-react';
+import { User, Book, MessageCircle, Calendar, Video, Phone } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+
+interface Booking {
+  id: string;
+  consultantId: string;
+  consultantName: string;
+  consultantImage: string;
+  consultantSpecialty: string;
+  userId: string;
+  date: string;
+  time: string;
+  consultationType: string;
+  message: string;
+  price: number;
+  status: string;
+  paymentMethod: string;
+  createdAt: string;
+}
 
 const Account = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const [bookings, setBookings] = useState<Booking[]>([]);
   
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
+    } else {
+      // Load user's bookings from localStorage
+      const loadBookings = () => {
+        const bookingsJSON = localStorage.getItem('agriadvisor_bookings');
+        if (bookingsJSON) {
+          const allBookings = JSON.parse(bookingsJSON);
+          // Filter bookings for current user
+          const userBookings = allBookings.filter(
+            (booking: Booking) => booking.userId === user?.id
+          );
+          setBookings(userBookings);
+        }
+      };
+      
+      loadBookings();
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, user]);
   
   if (!isAuthenticated || !user) {
     return null;
@@ -76,11 +111,75 @@ const Account = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-8 text-gray-500">
-                      {language === 'en' 
-                        ? 'You have no upcoming consultations.' 
-                        : 'ليس لديك استشارات قادمة.'}
-                    </div>
+                    {bookings.length > 0 ? (
+                      <div className="space-y-4">
+                        {bookings.map((booking) => (
+                          <div 
+                            key={booking.id} 
+                            className="border rounded-lg p-4 flex flex-col md:flex-row gap-4"
+                          >
+                            <div className="flex items-start gap-3">
+                              <img 
+                                src={booking.consultantImage} 
+                                alt={booking.consultantName}
+                                className="w-16 h-16 rounded-full object-cover"
+                              />
+                              <div>
+                                <h3 className="font-medium">{booking.consultantName}</h3>
+                                {booking.consultantSpecialty && (
+                                  <Badge variant="outline" className="bg-teal-50 text-teal-800 border-teal-200 text-xs">
+                                    {booking.consultantSpecialty}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-agri" />
+                                <span>
+                                  {format(parseISO(booking.date), "PPP")} · {booking.time}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {booking.consultationType === 'video' ? (
+                                  <Video className="h-4 w-4 text-agri" />
+                                ) : (
+                                  <Phone className="h-4 w-4 text-agri" />
+                                )}
+                                <span>
+                                  {booking.consultationType === 'video' 
+                                    ? (language === 'en' ? 'Video Call' : 'مكالمة فيديو')
+                                    : (language === 'en' ? 'Voice Call' : 'مكالمة صوتية')}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="flex flex-col items-end">
+                              <Badge className="bg-green-500">
+                                {language === 'en' ? 'Confirmed' : 'تم التأكيد'}
+                              </Badge>
+                              <span className="text-sm text-gray-600 mt-2">
+                                {language === 'ar' ? `${booking.price} ج` : `EGP ${booking.price}`}
+                              </span>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="mt-2 text-sm"
+                              >
+                                {language === 'en' ? 'View Details' : 'عرض التفاصيل'}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        {language === 'en' 
+                          ? 'You have no upcoming consultations.' 
+                          : 'ليس لديك استشارات قادمة.'}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -110,11 +209,61 @@ const Account = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-8 text-gray-500">
-                      {language === 'en' 
-                        ? 'You have no previous bookings.' 
-                        : 'ليس لديك حجوزات سابقة.'}
-                    </div>
+                    {bookings.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[600px]">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-3 px-2">
+                                {language === 'en' ? 'Consultant' : 'المستشار'}
+                              </th>
+                              <th className="text-left py-3 px-2">
+                                {language === 'en' ? 'Date & Time' : 'التاريخ والوقت'}
+                              </th>
+                              <th className="text-left py-3 px-2">
+                                {language === 'en' ? 'Type' : 'النوع'}
+                              </th>
+                              <th className="text-right py-3 px-2">
+                                {language === 'en' ? 'Price' : 'السعر'}
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {bookings.map((booking) => (
+                              <tr key={booking.id} className="border-b hover:bg-gray-50">
+                                <td className="py-3 px-2">
+                                  <div className="flex items-center">
+                                    <img 
+                                      src={booking.consultantImage} 
+                                      alt={booking.consultantName} 
+                                      className="w-8 h-8 rounded-full mr-2 rtl:ml-2 rtl:mr-0"
+                                    />
+                                    <span>{booking.consultantName}</span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-2">
+                                  {format(parseISO(booking.date), "d MMM yyyy")} · {booking.time}
+                                </td>
+                                <td className="py-3 px-2">
+                                  {booking.consultationType === 'video' 
+                                    ? (language === 'en' ? 'Video Call' : 'مكالمة فيديو')
+                                    : (language === 'en' ? 'Voice Call' : 'مكالمة صوتية')}
+                                </td>
+                                <td className="py-3 px-2 text-right font-medium">
+                                  {language === 'ar' ? `${booking.price} ج` : `EGP ${booking.price}`}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        {language === 'en' 
+                          ? 'You have no previous bookings.' 
+                          : 'ليس لديك حجوزات سابقة.'}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

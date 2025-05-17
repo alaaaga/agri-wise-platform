@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { CalendarIcon, Video, Phone, Clock, Check, CreditCard, BadgeDollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Consultant {
   id: string;
@@ -51,6 +52,7 @@ export const BookingModal = ({
 }: BookingModalProps) => {
   const { language } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState<string>('');
@@ -87,7 +89,38 @@ export const BookingModal = ({
     e.preventDefault();
     setIsSubmitting(true);
     
-    // محاكاة عملية الدفع
+    // Save booking to localStorage
+    if (user && consultant && date) {
+      const bookingId = `booking-${Date.now()}`;
+      const newBooking = {
+        id: bookingId,
+        consultantId: consultant.id,
+        consultantName: consultant.name,
+        consultantImage: consultant.image,
+        consultantSpecialty: consultant.specialty || '',
+        userId: user.id,
+        date: date.toISOString(),
+        time,
+        consultationType,
+        message,
+        price: consultant.price,
+        status: 'upcoming',
+        paymentMethod,
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Get existing bookings
+      const existingBookingsJSON = localStorage.getItem('agriadvisor_bookings');
+      const existingBookings = existingBookingsJSON ? JSON.parse(existingBookingsJSON) : [];
+      
+      // Add new booking
+      existingBookings.push(newBooking);
+      
+      // Save updated bookings
+      localStorage.setItem('agriadvisor_bookings', JSON.stringify(existingBookings));
+    }
+    
+    // Simulate payment process
     setTimeout(() => {
       setIsSubmitting(false);
       toast({
