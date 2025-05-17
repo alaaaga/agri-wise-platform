@@ -1,10 +1,9 @@
-
 import React from 'react';
 import Layout from '@/components/Layout';
 import ArticleCard from '@/components/ArticleCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Search, Article, Dog, Leaf, Tractor } from 'lucide-react';
+import { Search, FileText, Dog, Leaf, Tractor } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
@@ -80,7 +79,7 @@ const articlesData = [
     },
     category: 'tech',
     image: 'https://images.unsplash.com/photo-1584467541268-b040f83be3fd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
-    icon: <Article className="w-6 h-6" />
+    icon: <FileText className="w-6 h-6" />
   },
   {
     id: '5',

@@ -5,7 +5,7 @@ import ArticleCard from '../ArticleCard';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-import { Article, Leaf, Tractor } from 'lucide-react';
+import { FileText, Leaf, Tractor } from 'lucide-react';
 
 // Placeholder images - would use actual images in production
 import cropImage from '../../assets/crop.jpg';
@@ -35,7 +35,7 @@ const ArticlesSection = () => {
       image: livestockImage,
       date: language === 'en' ? 'April 22, 2023' : '٢٢ أبريل ٢٠٢٣',
       link: '/content/articles/livestock-health',
-      icon: <Article className="w-6 h-6" />
+      icon: <FileText className="w-6 h-6" />
     },
     {
       title: language === 'en' ? 'Soil Testing: The Foundation of Successful Farming' : 'اختبار التربة: أساس الزراعة الناجحة',
