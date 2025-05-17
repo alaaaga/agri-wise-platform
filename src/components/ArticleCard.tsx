@@ -12,10 +12,11 @@ interface ArticleCardProps {
   image: string;
   date: string;
   link: string;
+  icon?: React.ReactNode;
 }
 
-const ArticleCard = ({ title, summary, image, date, link }: ArticleCardProps) => {
-  const { t } = useLanguage();
+const ArticleCard = ({ title, summary, image, date, link, icon }: ArticleCardProps) => {
+  const { t, language } = useLanguage();
   const animationRef = useScrollAnimation();
 
   return (
@@ -30,15 +31,18 @@ const ArticleCard = ({ title, summary, image, date, link }: ArticleCardProps) =>
         </div>
         <CardHeader>
           <div className="text-sm text-gray-500 mb-2">{date}</div>
-          <CardTitle className="line-clamp-2">{title}</CardTitle>
+          <CardTitle className="line-clamp-2 flex items-center gap-2">
+            {icon && <span className="text-agri">{icon}</span>}
+            {title}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <CardDescription className="line-clamp-3">{summary}</CardDescription>
         </CardContent>
-        <CardFooter className="flex justify-between">
+        <CardFooter className={`flex ${language === 'ar' ? 'justify-start' : 'justify-between'}`}>
           <Link to={link}>
             <Button variant="ghost" className="text-agri hover:text-agri-dark">
-              {t('common.readMore')}
+              {language === 'en' ? 'Read More' : 'اقرأ المزيد'}
             </Button>
           </Link>
         </CardFooter>

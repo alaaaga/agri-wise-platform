@@ -48,31 +48,42 @@ const team = [
 const About = () => {
   const { t, language } = useLanguage();
   const titleRef = useScrollAnimation();
+  const missionRef = useScrollAnimation();
   
   return (
     <Layout>
-      <section className="bg-gradient-to-r from-green-700 to-green-900 text-white py-20">
-        <div className="container mx-auto px-4 text-center">
+      <section className="bg-green-800 text-white py-20 text-center">
+        <div className="container mx-auto px-4">
           <div ref={titleRef}>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">{t('about.title')}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              {language === 'en' ? 'About Us' : 'من نحن'}
+            </h1>
           </div>
         </div>
       </section>
 
       <section className="section-padding">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16">
-            <div className="order-2 md:order-1">
+          <div ref={missionRef} className={`grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-16 ${language === 'ar' ? 'rtl' : ''}`}>
+            <div className={`order-2 ${language === 'ar' ? 'md:order-2' : 'md:order-1'}`}>
               <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">{t('about.mission.title')}</h2>
-                <p className="text-gray-700">{t('about.mission.text')}</p>
+                <h2 className="text-2xl font-bold mb-4">{language === 'en' ? 'Our Mission' : 'مهمتنا'}</h2>
+                <p className="text-gray-700">
+                  {language === 'en' 
+                    ? 'Empowering farmers with knowledge and technology for sustainable and profitable agriculture.' 
+                    : 'تمكين المزارعين بالمعرفة والتكنولوجيا للزراعة المستدامة والمربحة.'}
+                </p>
               </div>
               <div>
-                <h2 className="text-2xl font-bold mb-4">{t('about.vision.title')}</h2>
-                <p className="text-gray-700">{t('about.vision.text')}</p>
+                <h2 className="text-2xl font-bold mb-4">{language === 'en' ? 'Our Vision' : 'رؤيتنا'}</h2>
+                <p className="text-gray-700">
+                  {language === 'en'
+                    ? 'To be the leading agricultural consultancy platform that combines traditional knowledge with modern innovations.'
+                    : 'أن نكون المنصة الاستشارية الزراعية الرائدة التي تجمع بين المعرفة التقليدية والابتكارات الحديثة.'}
+                </p>
               </div>
             </div>
-            <div className="order-1 md:order-2">
+            <div className={`order-1 ${language === 'ar' ? 'md:order-1' : 'md:order-2'}`}>
               <img 
                 src="https://images.unsplash.com/photo-1620200423727-8127f75d7f6c?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8ZmFybWVyfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=900&q=60" 
                 alt="Farmer in Field" 
@@ -82,7 +93,7 @@ const About = () => {
           </div>
           
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">{t('about.team.title')}</h2>
+            <h2 className="text-3xl font-bold mb-4">{language === 'en' ? 'Our Team' : 'فريقنا'}</h2>
             <div className="w-24 h-1 bg-agri mx-auto"></div>
           </div>
           

@@ -5,6 +5,7 @@ import ArticleCard from '../ArticleCard';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { Article, Leaf, Tractor } from 'lucide-react';
 
 // Placeholder images - would use actual images in production
 import cropImage from '../../assets/crop.jpg';
@@ -23,7 +24,8 @@ const ArticlesSection = () => {
         : 'اكتشف أحدث طرق الري التي توفر المياه وتزيد من إنتاجية المحاصيل.',
       image: cropImage,
       date: language === 'en' ? 'May 15, 2023' : '١٥ مايو ٢٠٢٣',
-      link: '/content/articles/modern-irrigation'
+      link: '/content/articles/modern-irrigation',
+      icon: <Leaf className="w-6 h-6" />
     },
     {
       title: language === 'en' ? 'Livestock Health: Prevention and Treatment of Common Diseases' : 'صحة الماشية: الوقاية وعلاج الأمراض الشائعة',
@@ -32,7 +34,8 @@ const ArticlesSection = () => {
         : 'دليل شامل للحفاظ على صحة ماشيتك من خلال الرعاية الوقائية والكشف المبكر عن الأمراض.',
       image: livestockImage,
       date: language === 'en' ? 'April 22, 2023' : '٢٢ أبريل ٢٠٢٣',
-      link: '/content/articles/livestock-health'
+      link: '/content/articles/livestock-health',
+      icon: <Article className="w-6 h-6" />
     },
     {
       title: language === 'en' ? 'Soil Testing: The Foundation of Successful Farming' : 'اختبار التربة: أساس الزراعة الناجحة',
@@ -41,15 +44,18 @@ const ArticlesSection = () => {
         : 'تعرف على سبب أهمية اختبار التربة المنتظم وكيفية تفسير نتائج الاختبار للتسميد الأمثل.',
       image: soilImage,
       date: language === 'en' ? 'March 10, 2023' : '١٠ مارس ٢٠٢٣',
-      link: '/content/articles/soil-testing'
+      link: '/content/articles/soil-testing',
+      icon: <Tractor className="w-6 h-6" />
     }
   ];
 
   return (
-    <section className="section-padding">
+    <section className="section-padding bg-gray-50 py-16">
       <div className="container mx-auto">
         <div ref={titleRef} className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('home.articles.title')}</h2>
+          <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${language === 'ar' ? 'rtl' : ''}`}>
+            {language === 'en' ? 'Latest Articles' : 'أحدث المقالات'}
+          </h2>
           <div className="w-24 h-1 bg-agri mx-auto"></div>
         </div>
         
@@ -62,14 +68,15 @@ const ArticlesSection = () => {
               image={article.image}
               date={article.date}
               link={article.link}
+              icon={article.icon}
             />
           ))}
         </div>
         
         <div className="text-center mt-12">
           <Link to="/content/articles">
-            <Button variant="outline" className="border-agri text-agri hover:bg-agri hover:text-white">
-              {t('common.viewAll')}
+            <Button variant="outline" className="border-agri text-agri hover:bg-agri hover:text-white px-8 py-2">
+              {language === 'en' ? 'View All' : 'عرض الكل'}
             </Button>
           </Link>
         </div>

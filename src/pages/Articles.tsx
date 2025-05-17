@@ -4,7 +4,7 @@ import Layout from '@/components/Layout';
 import ArticleCard from '@/components/ArticleCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
+import { Search, Article, Dog, Leaf, Tractor } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
@@ -25,7 +25,8 @@ const articlesData = [
       ar: '١٥ مايو ٢٠٢٣'
     },
     category: 'crop',
-    image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80'
+    image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
+    icon: <Leaf className="w-6 h-6" />
   },
   {
     id: '2',
@@ -42,7 +43,8 @@ const articlesData = [
       ar: '٢٢ أبريل ٢٠٢٣'
     },
     category: 'livestock',
-    image: 'https://images.unsplash.com/photo-1605152276897-4f618f831968?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80'
+    image: 'https://images.unsplash.com/photo-1605152276897-4f618f831968?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
+    icon: <Dog className="w-6 h-6" />
   },
   {
     id: '3',
@@ -59,7 +61,8 @@ const articlesData = [
       ar: '١٠ مارس ٢٠٢٣'
     },
     category: 'soil',
-    image: 'https://images.unsplash.com/photo-1605000797499-95a51c5269ae?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80'
+    image: 'https://images.unsplash.com/photo-1605000797499-95a51c5269ae?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80',
+    icon: <Tractor className="w-6 h-6" />
   },
   {
     id: '4',
@@ -76,7 +79,8 @@ const articlesData = [
       ar: '٥ فبراير ٢٠٢٣'
     },
     category: 'tech',
-    image: 'https://images.unsplash.com/photo-1584467541268-b040f83be3fd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80'
+    image: 'https://images.unsplash.com/photo-1584467541268-b040f83be3fd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
+    icon: <Article className="w-6 h-6" />
   },
   {
     id: '5',
@@ -93,7 +97,8 @@ const articlesData = [
       ar: '١٨ يناير ٢٠٢٣'
     },
     category: 'crop',
-    image: 'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80'
+    image: 'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
+    icon: <Leaf className="w-6 h-6" />
   },
   {
     id: '6',
@@ -110,7 +115,44 @@ const articlesData = [
       ar: '٣ ديسمبر ٢٠٢٢'
     },
     category: 'soil',
-    image: 'https://images.unsplash.com/photo-1551976796-c25191af0ffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80'
+    image: 'https://images.unsplash.com/photo-1551976796-c25191af0ffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
+    icon: <Tractor className="w-6 h-6" />
+  },
+  {
+    id: '7',
+    title: {
+      en: 'Animal Nutrition: Essential Diet for Healthy Livestock',
+      ar: 'تغذية الحيوان: النظام الغذائي الأساسي للماشية الصحية'
+    },
+    summary: {
+      en: 'Learn about proper nutrition for different livestock animals to improve health and productivity.',
+      ar: 'تعرف على التغذية المناسبة لمختلف حيوانات المزرعة لتحسين الصحة والإنتاجية.'
+    },
+    date: {
+      en: 'November 12, 2022',
+      ar: '١٢ نوفمبر ٢٠٢٢'
+    },
+    category: 'livestock',
+    image: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8Y293JTIwZmVlZGluZ3xlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60',
+    icon: <Dog className="w-6 h-6" />
+  },
+  {
+    id: '8',
+    title: {
+      en: 'Breeding Techniques for Livestock Improvement',
+      ar: 'تقنيات التربية لتحسين الماشية'
+    },
+    summary: {
+      en: 'Explore modern breeding methods to enhance livestock genetics and improve production traits.',
+      ar: 'استكشف طرق التربية الحديثة لتعزيز وراثة الماشية وتحسين سمات الإنتاج.'
+    },
+    date: {
+      en: 'October 5, 2022',
+      ar: '٥ أكتوبر ٢٠٢٢'
+    },
+    category: 'livestock',
+    image: 'https://images.unsplash.com/photo-1516222338250-863216ce01ea?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y293fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60',
+    icon: <Dog className="w-6 h-6" />
   }
 ];
 
@@ -188,6 +230,7 @@ const Articles = () => {
                   image={article.image}
                   date={article.date[language as 'en' | 'ar']}
                   link={`/content/articles/${article.id}`}
+                  icon={article.icon}
                 />
               ))}
             </div>
