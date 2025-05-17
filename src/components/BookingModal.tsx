@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Video, Phone, Clock, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Consultant {
@@ -53,6 +54,7 @@ export const BookingModal = ({
   
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState<string>('');
+  const [consultationType, setConsultationType] = useState<string>('video');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -80,6 +82,12 @@ export const BookingModal = ({
     // محاكاة عملية الحجز
     setTimeout(() => {
       setIsSubmitting(false);
+      toast({
+        title: language === 'en' ? 'Booking Confirmed!' : 'تم تأكيد الحجز!',
+        description: language === 'en'
+          ? `Your consultation is scheduled on ${format(date, 'PPP')} at ${time}.`
+          : `تم جدولة استشارتك في ${format(date, 'PPP')} الساعة ${time}.`,
+      });
       onBookingSuccess();
     }, 1000);
   };
@@ -98,18 +106,18 @@ export const BookingModal = ({
         </DialogHeader>
         
         <div className="py-4">
-          <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
             <img 
               src={consultant.image} 
               alt={consultant.name}
-              className="w-16 h-16 rounded-full object-cover"
+              className="w-16 h-16 rounded-full object-cover border-2 border-agri"
             />
             <div>
               <h3 className="font-semibold text-lg">{consultant.name}</h3>
               {consultant.specialty && (
-                <span className="px-2 py-1 bg-teal-100 text-teal-800 text-xs rounded-full">
+                <Badge variant="outline" className="bg-teal-50 text-teal-800 border-teal-200">
                   {consultant.specialty}
-                </span>
+                </Badge>
               )}
             </div>
             <div className="ml-auto">
@@ -120,9 +128,45 @@ export const BookingModal = ({
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                {language === 'en' ? 'Consultation Type' : 'نوع الاستشارة'}
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={consultationType === 'video' ? 'default' : 'outline'}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2",
+                    consultationType === 'video' ? 'bg-agri hover:bg-agri-dark' : ''
+                  )}
+                  onClick={() => setConsultationType('video')}
+                >
+                  <Video className="h-4 w-4" />
+                  {language === 'en' ? 'Video Call' : 'مكالمة فيديو'}
+                  {consultationType === 'video' && <Check className="h-3 w-3 ml-1" />}
+                </Button>
+                <Button
+                  type="button"
+                  variant={consultationType === 'voice' ? 'default' : 'outline'}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2",
+                    consultationType === 'voice' ? 'bg-agri hover:bg-agri-dark' : ''
+                  )}
+                  onClick={() => setConsultationType('voice')}
+                >
+                  <Phone className="h-4 w-4" />
+                  {language === 'en' ? 'Voice Call' : 'مكالمة صوتية'}
+                  {consultationType === 'voice' && <Check className="h-3 w-3 ml-1" />}
+                </Button>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4" />
                   {language === 'en' ? 'Select Date' : 'اختر التاريخ'}
                 </label>
                 <Popover>
@@ -152,7 +196,8 @@ export const BookingModal = ({
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
                   {language === 'en' ? 'Select Time' : 'اختر الوقت'}
                 </label>
                 <Select value={time} onValueChange={setTime}>
@@ -187,9 +232,10 @@ export const BookingModal = ({
             <div className="pt-4">
               <Button 
                 type="submit" 
-                className="w-full bg-agri hover:bg-agri-dark"
+                className="w-full bg-agri hover:bg-agri-dark flex items-center justify-center gap-2"
                 disabled={isSubmitting}
               >
+                <Check className="h-4 w-4" />
                 {isSubmitting 
                   ? (language === 'en' ? 'Booking...' : 'جاري الحجز...') 
                   : (language === 'en' ? 'Confirm Booking' : 'تأكيد الحجز')}

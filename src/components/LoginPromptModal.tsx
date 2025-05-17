@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { LogIn, UserPlus } from 'lucide-react';
 
 interface LoginPromptModalProps {
   isOpen: boolean;
@@ -35,6 +36,10 @@ export const LoginPromptModal = ({ isOpen, onClose, onLoginSuccess }: LoginPromp
         </DialogHeader>
         
         <div className="flex flex-col items-center pt-4 pb-6">
+          <div className="p-4 bg-yellow-50 rounded-full mb-4">
+            <LogIn className="h-8 w-8 text-yellow-500" />
+          </div>
+          
           <p className="text-center mb-6 text-gray-600">
             {language === 'en' 
               ? 'You need to login to your account to book a consultation.' 
@@ -42,15 +47,17 @@ export const LoginPromptModal = ({ isOpen, onClose, onLoginSuccess }: LoginPromp
           </p>
           
           <Button 
-            className="w-full mb-2 bg-agri hover:bg-agri-dark" 
+            className="w-full mb-2 bg-agri hover:bg-agri-dark flex items-center justify-center gap-2" 
             onClick={handleLogin}
           >
+            <LogIn className="h-4 w-4" />
             {language === 'en' ? 'Login' : 'تسجيل الدخول'}
           </Button>
           
           <div className="mt-4 text-sm text-center">
             {language === 'en' ? "Don't have an account? " : 'ليس لديك حساب؟ '}
-            <Link to="/signup" className="text-agri hover:underline" onClick={onClose}>
+            <Link to="/signup" className="text-agri hover:underline flex items-center justify-center gap-1 inline-flex" onClick={onClose}>
+              <UserPlus className="h-3 w-3" />
               {language === 'en' ? 'Sign up' : 'إنشاء حساب'}
             </Link>
           </div>

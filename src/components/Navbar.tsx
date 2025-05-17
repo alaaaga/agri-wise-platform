@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, ChevronDown, User, LogOut } from 'lucide-react';
+import { Menu, X, ChevronDown, User, LogOut, UserPlus, LogIn } from 'lucide-react';
 
 const Navbar = () => {
   const { language, setLanguage, t } = useLanguage();
@@ -35,17 +35,17 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-8 rtl:space-x-reverse">
-            <Link to="/" className="text-gray-700 hover:text-agri font-medium">
+          <div className="hidden md:flex md:items-center md:space-x-6 rtl:space-x-reverse">
+            <Link to="/" className="text-gray-700 hover:text-agri font-medium px-2">
               {t('nav.home')}
             </Link>
-            <Link to="/services" className="text-gray-700 hover:text-agri font-medium">
+            <Link to="/services" className="text-gray-700 hover:text-agri font-medium px-2">
               {t('nav.services')}
             </Link>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center text-gray-700 hover:text-agri font-medium">
+                <button className="flex items-center text-gray-700 hover:text-agri font-medium px-2">
                   {t('nav.content')}
                   <ChevronDown className="ml-1 h-4 w-4" />
                 </button>
@@ -79,10 +79,10 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
             
-            <Link to="/book" className="text-gray-700 hover:text-agri font-medium">
+            <Link to="/book" className="text-gray-700 hover:text-agri font-medium px-2">
               {t('nav.book')}
             </Link>
-            <Link to="/about" className="text-gray-700 hover:text-agri font-medium">
+            <Link to="/about" className="text-gray-700 hover:text-agri font-medium px-2">
               {t('nav.about')}
             </Link>
           </div>
@@ -110,16 +110,28 @@ const Navbar = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <>
-                <Link to="/login">
-                  <Button variant="outline">{t('nav.login')}</Button>
-                </Link>
-                <Link to="/signup">
-                  <Button variant="default" className="bg-agri hover:bg-agri-dark">
-                    {t('nav.signup')}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <UserPlus className="h-4 w-4" />
+                    <span>{language === 'en' ? 'Account' : 'الحساب'}</span>
                   </Button>
-                </Link>
-              </>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Link to="/login" className="w-full flex items-center">
+                      <LogIn className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                      <span>{t('nav.login')}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Link to="/signup" className="w-full flex items-center">
+                      <UserPlus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                      <span>{t('nav.signup')}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             
             <Button 
@@ -207,16 +219,26 @@ const Navbar = () => {
                   </Button>
                 </>
               ) : (
-                <>
+                <div className="space-y-2">
                   <Link to="/login" onClick={toggleMenu}>
-                    <Button variant="outline" className="w-full">{t('nav.login')}</Button>
-                  </Link>
-                  <Link to="/signup" onClick={toggleMenu}>
-                    <Button variant="default" className="w-full bg-agri hover:bg-agri-dark">
-                      {t('nav.signup')}
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start"
+                    >
+                      <LogIn className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                      <span>{t('nav.login')}</span>
                     </Button>
                   </Link>
-                </>
+                  <Link to="/signup" onClick={toggleMenu}>
+                    <Button 
+                      variant="default" 
+                      className="w-full justify-start bg-agri hover:bg-agri-dark"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                      <span>{t('nav.signup')}</span>
+                    </Button>
+                  </Link>
+                </div>
               )}
             </div>
           </div>
