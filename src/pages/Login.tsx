@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -15,10 +15,15 @@ const Login = () => {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // استخراج المسار السابق إن وجد
+  const from = location.state?.from || '/';
+  const callback = location.state?.callback;
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +37,14 @@ const Login = () => {
           ? 'You have successfully logged in.' 
           : 'لقد قمت بتسجيل الدخول بنجاح.'
       });
-      navigate('/');
+      
+      // تنفيذ الدالة المرجعية في حال وجودها
+      if (typeof callback === 'function') {
+        callback();
+      }
+      
+      // التنقل إلى الصفحة السابقة
+      navigate(from);
     } catch (error) {
       toast({
         title: language === 'en' ? 'Login Failed' : 'فشل تسجيل الدخول',
