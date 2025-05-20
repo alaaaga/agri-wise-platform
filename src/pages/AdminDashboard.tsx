@@ -19,17 +19,19 @@ import {
   CalendarCheck,
   BookOpenText,
   Moon,
-  Sun
+  Sun,
+  Settings,
+  BarChart
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useTheme } from '@/hooks/useTheme';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminArticlesPanel from '@/components/admin/AdminArticlesPanel';
 import AdminVideosPanel from '@/components/admin/AdminVideosPanel';
 import AdminCaseStudiesPanel from '@/components/admin/AdminCaseStudiesPanel';
 import AdminBookingsPanel from '@/components/admin/AdminBookingsPanel';
+import { toast } from "@/components/ui/sonner";
 
 const AdminDashboard = () => {
   const { user, isAuthenticated } = useAuth();
@@ -37,10 +39,27 @@ const AdminDashboard = () => {
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Admin access check
+  // Admin access check - redirect if not admin
   if (!isAuthenticated || user?.role !== 'admin') {
     return <Navigate to="/login" replace />;
   }
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const tabNames: Record<string, string> = {
+      overview: language === 'en' ? 'Overview' : 'نظرة عامة',
+      articles: language === 'en' ? 'Articles' : 'المقالات',
+      videos: language === 'en' ? 'Videos' : 'الفيديوهات',
+      cases: language === 'en' ? 'Case Studies' : 'دراسات الحالة',
+      users: language === 'en' ? 'Users' : 'المستخدمين',
+      bookings: language === 'en' ? 'Bookings' : 'الحجوزات',
+    };
+    
+    toast.success(language === 'en' 
+      ? `Viewing ${tabNames[value]} section` 
+      : `عرض قسم ${tabNames[value]}`
+    );
+  };
 
   const dashboardItems = [
     { count: 24, label: language === 'en' ? 'Total Articles' : 'إجمالي المقالات', color: 'bg-blue-100 dark:bg-blue-900', icon: FileText },
@@ -50,6 +69,17 @@ const AdminDashboard = () => {
     { count: 8, label: language === 'en' ? 'Pending Bookings' : 'الحجوزات المعلقة', color: 'bg-red-100 dark:bg-red-900', icon: CalendarCheck }
   ];
 
+  const handleQuickAction = (action: string) => {
+    const actionMessages: Record<string, string> = {
+      article: language === 'en' ? 'Creating new article...' : 'جاري إنشاء مقال جديد...',
+      video: language === 'en' ? 'Uploading new video...' : 'جاري رفع فيديو جديد...',
+      case: language === 'en' ? 'Adding case study...' : 'جاري إضافة دراسة حالة...'
+    };
+    
+    toast.success(actionMessages[action]);
+    setActiveTab(action === 'article' ? 'articles' : action === 'video' ? 'videos' : 'cases');
+  };
+
   return (
     <Layout>
       <div className="py-6 px-4 sm:px-6 lg:px-8 min-h-screen">
@@ -58,16 +88,16 @@ const AdminDashboard = () => {
             {language === 'en' ? 'Admin Dashboard' : 'لوحة تحكم المسؤول'}
           </h1>
           <div className="flex items-center gap-2">
-            <Sun className="h-4 w-4" />
+            <Sun className="h-4 w-4 text-yellow-500" />
             <Switch
               checked={theme === 'dark'}
               onCheckedChange={() => setTheme(theme === 'light' ? 'dark' : 'light')}
             />
-            <Moon className="h-4 w-4" />
+            <Moon className="h-4 w-4 text-slate-700 dark:text-slate-300" />
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="mb-6 flex flex-wrap">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <LayoutDashboard className="h-4 w-4" />
@@ -115,14 +145,21 @@ const AdminDashboard = () => {
             <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4">
+                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                    <BarChart className="h-5 w-5 text-primary" />
                     {language === 'en' ? 'Recent Activities' : 'الأنشطة الأخيرة'}
                   </h3>
                   <ul className="space-y-3">
-                    {[1, 2, 3, 4, 5].map((i) => (
+                    {[
+                      {activity: language === 'en' ? 'New article published' : 'تم نشر مقال جديد', time: '2h ago'},
+                      {activity: language === 'en' ? 'User Ahmed registered' : 'سجّل المستخدم أحمد', time: '4h ago'},
+                      {activity: language === 'en' ? 'New consultation booked' : 'تم حجز استشارة جديدة', time: '6h ago'},
+                      {activity: language === 'en' ? 'Video uploaded' : 'تم رفع فيديو', time: '1d ago'},
+                      {activity: language === 'en' ? 'Case study added' : 'تمت إضافة دراسة حالة', time: '2d ago'}
+                    ].map((item, i) => (
                       <li key={i} className="flex justify-between p-2 border-b last:border-0 text-sm">
-                        <span>{language === 'en' ? `Activity ${i}` : `نشاط ${i}`}</span>
-                        <span className="text-muted-foreground">2h ago</span>
+                        <span>{item.activity}</span>
+                        <span className="text-muted-foreground">{item.time}</span>
                       </li>
                     ))}
                   </ul>
@@ -131,19 +168,20 @@ const AdminDashboard = () => {
               
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4">
+                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                    <Settings className="h-5 w-5 text-primary" />
                     {language === 'en' ? 'Quick Actions' : 'إجراءات سريعة'}
                   </h3>
                   <div className="flex flex-col gap-3">
-                    <Button variant="outline" className="justify-start">
+                    <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('article')}>
                       <FileText className="mr-2 h-4 w-4" />
                       {language === 'en' ? 'Create New Article' : 'إنشاء مقال جديد'}
                     </Button>
-                    <Button variant="outline" className="justify-start">
+                    <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('video')}>
                       <Video className="mr-2 h-4 w-4" />
                       {language === 'en' ? 'Upload New Video' : 'رفع فيديو جديد'}
                     </Button>
-                    <Button variant="outline" className="justify-start">
+                    <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('case')}>
                       <BookOpenText className="mr-2 h-4 w-4" />
                       {language === 'en' ? 'Add Case Study' : 'إضافة دراسة حالة'}
                     </Button>

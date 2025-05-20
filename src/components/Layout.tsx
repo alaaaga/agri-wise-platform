@@ -16,7 +16,7 @@ const Layout = ({ children }: LayoutProps) => {
   return (
     <div className={`${language === 'ar' ? 'rtl font-tajawal' : 'ltr font-poppins'} ${theme === 'dark' ? 'dark' : ''} min-h-screen flex flex-col`}>
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-grow bg-background text-foreground transition-colors duration-300">
         {children}
       </main>
       <Footer />

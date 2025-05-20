@@ -6,11 +6,13 @@ type Theme = 'light' | 'dark';
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
 }
 
 const defaultContext: ThemeContextType = {
   theme: 'light',
   setTheme: () => {},
+  toggleTheme: () => {},
 };
 
 export const ThemeContext = createContext<ThemeContextType>(defaultContext);
@@ -38,6 +40,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     return 'light';
   });
 
+  // Toggle theme function
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+  };
+
   useEffect(() => {
     // Save theme preference to localStorage whenever it changes
     localStorage.setItem('agriadvisor_theme', theme);
@@ -51,7 +58,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
