@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -254,9 +255,11 @@ const CaseStudies = () => {
                 {language === 'en' ? 'Schedule a Consultation' : 'جدولة استشارة'}
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="border-white text-white hover:bg-indigo-700">
-              {language === 'en' ? 'View Services' : 'عرض الخدمات'}
-            </Button>
+            <Link to="/services">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-indigo-700">
+                {language === 'en' ? 'View Services' : 'عرض الخدمات'}
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
