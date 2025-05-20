@@ -13,6 +13,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -82,6 +83,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(newUser);
     localStorage.setItem('agriadvisor_user', JSON.stringify(newUser));
   };
+  
+  const forgotPassword = async (email: string) => {
+    // Mock forgot password functionality
+    // In a real app, this would send a reset link to the user's email
+    if (!email) {
+      throw new Error('Email is required');
+    }
+    
+    // For demo, we'll just simulate success
+    return Promise.resolve();
+  };
 
   const logout = () => {
     setUser(null);
@@ -94,6 +106,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       isAuthenticated: !!user, 
       login, 
       register, 
+      forgotPassword,
       logout 
     }}>
       {children}

@@ -12,6 +12,7 @@ import BookConsultation from "./pages/BookConsultation";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import Articles from "./pages/Articles";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/account" element={<Account />} />
               <Route path="/content/articles" element={<Articles />} />
               <Route path="/content/articles/:id" element={<ArticleDetail />} />

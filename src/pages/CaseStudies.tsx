@@ -1,15 +1,27 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import Layout from '@/components/Layout';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-import { Link } from 'react-router-dom';
+import { LoginPromptModal } from '@/components/LoginPromptModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const CaseStudies = () => {
   const { language } = useLanguage();
+  const { isAuthenticated } = useAuth();
   const titleRef = useScrollAnimation();
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [selectedCaseStudy, setSelectedCaseStudy] = useState<any>(null);
+  const [caseStudyDialogOpen, setCaseStudyDialogOpen] = useState(false);
 
   // Mock case study data - would typically come from an API
   const caseStudies = [
@@ -119,6 +131,23 @@ const CaseStudies = () => {
     return found ? found.color : 'bg-gray-100 text-gray-800';
   };
 
+  const handleReadCaseStudy = (caseStudy: any) => {
+    if (isAuthenticated) {
+      setSelectedCaseStudy(caseStudy);
+      setCaseStudyDialogOpen(true);
+    } else {
+      setSelectedCaseStudy(caseStudy);
+      setLoginModalOpen(true);
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    // This will be called after successful login
+    if (selectedCaseStudy) {
+      setCaseStudyDialogOpen(true);
+    }
+  };
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -180,14 +209,17 @@ const CaseStudies = () => {
                       {language === 'en' ? 'KEY RESULTS:' : 'النتائج الرئيسية:'}
                     </h4>
                     <ul className="list-disc ml-5 rtl:mr-5 rtl:ml-0 text-sm text-gray-600 space-y-1">
-                      {study.results.map((result, idx) => (
+                      {study.results.map((result: string, idx: number) => (
                         <li key={idx}>{result}</li>
                       ))}
                     </ul>
                   </div>
                 </CardContent>
                 <CardFooter className="px-6 py-4 bg-gray-50 border-t">
-                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700">
+                  <Button 
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                    onClick={() => handleReadCaseStudy(study)}
+                  >
                     {language === 'en' ? 'Read Full Case Study' : 'قراءة دراسة الحالة كاملة'}
                   </Button>
                 </CardFooter>
@@ -256,6 +288,104 @@ const CaseStudies = () => {
           </div>
         </div>
       </section>
+
+      {/* Login Prompt Modal */}
+      <LoginPromptModal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+        message={language === 'en'
+          ? 'You need to login to read the full case study.'
+          : 'تحتاج إلى تسجيل الدخول لقراءة دراسة الحالة كاملة.'}
+      />
+
+      {/* Case Study Full Dialog */}
+      {selectedCaseStudy && (
+        <Dialog open={caseStudyDialogOpen} onOpenChange={setCaseStudyDialogOpen}>
+          <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">{selectedCaseStudy.title}</DialogTitle>
+              <DialogDescription className="text-sm">
+                {selectedCaseStudy.location}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4">
+              <div className="h-64 md:h-80 overflow-hidden rounded-lg mb-6">
+                <img 
+                  src={selectedCaseStudy.image} 
+                  alt={selectedCaseStudy.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              
+              <div className={`inline-block ${getCategoryColor(selectedCaseStudy.category)} px-3 py-1 rounded-full text-sm font-medium mb-4`}>
+                {selectedCaseStudy.category}
+              </div>
+              
+              <h2 className="text-2xl font-bold mb-4">{selectedCaseStudy.title}</h2>
+              
+              <div className="prose max-w-none">
+                <p className="text-gray-800 mb-6">{selectedCaseStudy.summary}</p>
+                
+                <h3 className="text-xl font-semibold mb-3">
+                  {language === 'en' ? 'Challenge' : 'التحدي'}
+                </h3>
+                <p className="text-gray-700 mb-6">
+                  {language === 'en'
+                    ? `The ${selectedCaseStudy.title.toLowerCase()} project faced significant challenges including resource constraints, environmental factors, and the need to maintain productivity while implementing new methods.`
+                    : `واجه مشروع ${selectedCaseStudy.title} تحديات كبيرة بما في ذلك قيود الموارد والعوامل البيئية والحاجة إلى الحفاظ على الإنتاجية أثناء تنفيذ طرق جديدة.`}
+                </p>
+                
+                <h3 className="text-xl font-semibold mb-3">
+                  {language === 'en' ? 'Solution' : 'الحل'}
+                </h3>
+                <p className="text-gray-700 mb-6">
+                  {language === 'en'
+                    ? `Through careful planning and expert consultation, we implemented a comprehensive approach that addressed the specific needs of the farm while considering long-term sustainability.`
+                    : `من خلال التخطيط الدقيق والاستشارة الخبيرة، قمنا بتنفيذ نهج شامل يلبي الاحتياجات المحددة للمزرعة مع مراعاة الاستدامة على المدى الطويل.`}
+                </p>
+                
+                <h3 className="text-xl font-semibold mb-3">
+                  {language === 'en' ? 'Implementation' : 'التنفيذ'}
+                </h3>
+                <p className="text-gray-700 mb-6">
+                  {language === 'en'
+                    ? `The implementation was conducted in phases over the course of several growing seasons, with careful monitoring of outcomes at each stage to allow for adjustments.`
+                    : `تم تنفيذ المشروع على مراحل على مدار عدة مواسم نمو، مع مراقبة دقيقة للنتائج في كل مرحلة للسماح بإجراء التعديلات.`}
+                </p>
+                
+                <h3 className="text-xl font-semibold mb-3">
+                  {language === 'en' ? 'Results' : 'النتائج'}
+                </h3>
+                <ul className="list-disc pl-5 rtl:pr-5 rtl:pl-0 text-gray-700 space-y-2 mb-6">
+                  {selectedCaseStudy.results.map((result: string, idx: number) => (
+                    <li key={idx} className="text-base">{result}</li>
+                  ))}
+                </ul>
+                
+                <h3 className="text-xl font-semibold mb-3">
+                  {language === 'en' ? 'Conclusion' : 'الخلاصة'}
+                </h3>
+                <p className="text-gray-700">
+                  {language === 'en'
+                    ? `This case study demonstrates how targeted agricultural interventions can lead to significant improvements in productivity, sustainability, and profitability. The methodologies developed can be adapted for similar farming operations facing comparable challenges.`
+                    : `توضح دراسة الحالة هذه كيف يمكن للتدخلات الزراعية المستهدفة أن تؤدي إلى تحسينات كبيرة في الإنتاجية والاستدامة والربحية. يمكن تكييف المنهجيات المطورة للعمليات الزراعية المماثلة التي تواجه تحديات مماثلة.`}
+                </p>
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button onClick={() => setCaseStudyDialogOpen(false)}>
+                {language === 'en' ? 'Close' : 'إغلاق'}
+              </Button>
+              <Button className="bg-indigo-600 hover:bg-indigo-700">
+                {language === 'en' ? 'Book a Consultation' : 'حجز استشارة'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Layout>
   );
 };
