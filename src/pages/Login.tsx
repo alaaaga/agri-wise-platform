@@ -3,18 +3,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from "@/components/ui/sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import Layout from '@/components/Layout';
-import { LogIn, Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
+import { LogIn, Mail, Lock, ArrowRight, UserPlus, Loader2 } from 'lucide-react';
 
 const Login = () => {
-  const { login } = useAuth();
-  const { t, language } = useLanguage();
-  const { toast } = useToast();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -26,18 +25,23 @@ const Login = () => {
   const from = location.state?.from || '/';
   const callback = location.state?.callback;
   
+  // إعادة توجيه المستخدم المصادق عليه بالفعل
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate(from);
+    }
+  }, [isAuthenticated, authLoading, navigate, from]);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
       await login(email, password);
-      toast({
-        title: language === 'en' ? 'Welcome back!' : 'مرحبًا بعودتك!',
-        description: language === 'en' 
-          ? 'You have successfully logged in.' 
-          : 'لقد قمت بتسجيل الدخول بنجاح.'
-      });
+      
+      toast.success(language === 'en' 
+        ? 'Welcome back!' 
+        : 'مرحبًا بعودتك!');
       
       // تنفيذ الدالة المرجعية في حال وجودها
       if (typeof callback === 'function') {
@@ -47,17 +51,31 @@ const Login = () => {
       // التنقل إلى الصفحة السابقة
       navigate(from);
     } catch (error) {
-      toast({
-        title: language === 'en' ? 'Login Failed' : 'فشل تسجيل الدخول',
-        description: language === 'en' 
-          ? 'Invalid email or password. Please try again.' 
-          : 'البريد الإلكتروني أو كلمة المرور غير صالحة. يرجى المحاولة مرة أخرى.',
-        variant: 'destructive'
-      });
+      // تم معالجة الخطأ داخل دالة login
+      console.error('Login failed:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
+  
+  // عرض رسالة تحميل أثناء التحقق من الجلسة
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-agri" />
+            <p>{language === 'en' ? 'Loading...' : 'جارٍ التحميل...'}</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  // إذا كان المستخدم مسجل دخوله بالفعل، فلا داعي لعرض نموذج تسجيل الدخول
+  if (isAuthenticated) {
+    return null;
+  }
   
   return (
     <Layout>
@@ -119,7 +137,10 @@ const Login = () => {
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
-                      language === 'en' ? 'Logging in...' : 'جاري تسجيل الدخول...'
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        {language === 'en' ? 'Logging in...' : 'جاري تسجيل الدخول...'}
+                      </>
                     ) : (
                       <>
                         {language === 'en' ? 'Login' : 'تسجيل الدخول'}
@@ -143,13 +164,8 @@ const Login = () => {
                 <div className="text-center text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
                   <p>
                     {language === 'en' 
-                      ? 'For demo, use email: user@example.com / password: password' 
-                      : 'للعرض، استخدم البريد: user@example.com / كلمة المرور: password'}
-                  </p>
-                  <p className="mt-1">
-                    {language === 'en' 
-                      ? 'Admin access: admin@example.com / password: password' 
-                      : 'وصول المدير: admin@example.com / كلمة المرور: password'}
+                      ? 'Login with your Supabase authentication credentials.' 
+                      : 'قم بتسجيل الدخول باستخدام بيانات اعتماد Supabase.'}
                   </p>
                 </div>
               </CardFooter>
