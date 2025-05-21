@@ -27,6 +27,19 @@ interface User {
   avatar_url?: string;
 }
 
+// Define type for Supabase auth user data
+interface AuthUser {
+  id: string;
+  email?: string;
+  banned?: boolean;
+  // Add other properties as needed
+}
+
+// Define type for Supabase auth response
+interface AuthUsersResponse {
+  users?: AuthUser[];
+}
+
 const AdminUsersPanel = () => {
   const { language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,7 +60,10 @@ const AdminUsersPanel = () => {
         if (profilesError) throw profilesError;
         
         // Get users authentication data to get emails
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers() as { 
+          data: AuthUsersResponse, 
+          error: Error | null 
+        };
         
         if (authError) {
           console.error('Error fetching auth users:', authError);
