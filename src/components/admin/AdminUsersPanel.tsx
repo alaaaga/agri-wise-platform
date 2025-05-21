@@ -39,32 +39,53 @@ const AdminUsersPanel = () => {
       try {
         setLoading(true);
         
-        // For demonstration purposes, we're using mock data
-        // In production, you would uncomment this code to fetch from Supabase
-        
-        /*
-        const { data, error } = await supabase
+        // Fetch users from Supabase
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, role, avatar_url')
-          .order('first_name', { ascending: true });
+          .select('id, first_name, last_name, role, avatar_url');
         
-        if (error) throw error;
+        if (profilesError) throw profilesError;
         
-        // Transform the data to match our User interface
-        const transformedData = data.map(user => ({
-          id: user.id,
-          email: user.email || '',
-          first_name: user.first_name || '',
-          last_name: user.last_name || '',
-          role: user.role || 'user',
-          status: 'active', // This is hardcoded for now
-          avatar_url: user.avatar_url
-        }));
+        // Get users authentication data to get emails
+        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.error('Error fetching auth users:', authError);
+          // Continue with profiles only if auth fails
+          const transformedData = profiles.map(profile => ({
+            id: profile.id,
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            role: profile.role || 'user',
+            status: 'active' as const,
+            avatar_url: profile.avatar_url
+          }));
+          
+          setUsers(transformedData);
+          return;
+        }
+        
+        // Combine profile and auth data
+        const transformedData = profiles.map(profile => {
+          const authUser = authUsers.users?.find(user => user.id === profile.id);
+          return {
+            id: profile.id,
+            email: authUser?.email || '',
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            role: profile.role || 'user',
+            status: authUser?.banned ? 'inactive' as const : 'active' as const,
+            avatar_url: profile.avatar_url
+          };
+        });
         
         setUsers(transformedData);
-        */
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError(err instanceof Error ? err.message : 'فشل في جلب المستخدمين');
+        toast.error(language === 'en' ? 'Failed to fetch users' : 'فشل في جلب المستخدمين');
         
-        // Using mock data for now
+        // Set fallback mock data if the fetch fails
         const mockUsers = [
           { id: '1', first_name: 'Ahmed', last_name: 'Mohamed', email: 'ahmed@example.com', role: 'user', status: 'active' as const },
           { id: '2', first_name: 'Fatima', last_name: 'Ali', email: 'fatima@example.com', role: 'user', status: 'active' as const },
@@ -74,10 +95,6 @@ const AdminUsersPanel = () => {
         ];
         
         setUsers(mockUsers);
-      } catch (err) {
-        console.error('Error fetching users:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch users');
-        toast.error(language === 'en' ? 'Failed to fetch users' : 'فشل في جلب المستخدمين');
       } finally {
         setLoading(false);
       }
@@ -94,7 +111,6 @@ const AdminUsersPanel = () => {
   );
 
   const handleAddUser = () => {
-    // In a real app, this would open a form to add a new user
     toast.info(
       language === 'en' 
         ? 'This feature will be implemented soon' 
@@ -103,7 +119,6 @@ const AdminUsersPanel = () => {
   };
 
   const handleUserSettings = (userId: string) => {
-    // In a real app, this would open user settings
     toast.info(
       language === 'en' 
         ? `Managing user ID: ${userId}` 
