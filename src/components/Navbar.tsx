@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -46,14 +45,16 @@ const Navbar = () => {
         toast.success(
           <div className="space-y-2">
             <p>{language === 'en' ? 'Admin Credentials:' : 'بيانات المسؤول:'}</p>
-            <p><strong>{language === 'en' ? 'Email:' : 'البريد الإلكتروني:'}</strong> {result.data.email}</p>
-            <p><strong>{language === 'en' ? 'Password:' : 'كلمة المرور:'}</strong> {result.data.password}</p>
+            {result.data.email && <p><strong>{language === 'en' ? 'Email:' : 'البريد الإلكتروني:'}</strong> {result.data.email}</p>}
+            {result.data.password && <p><strong>{language === 'en' ? 'Password:' : 'كلمة المرور:'}</strong> {result.data.password}</p>}
           </div>,
           { duration: 10000 }
         );
         
         // إعادة التحقق من حالة المسؤول
         await checkAdminRole();
+      } else if (result.message) {
+        toast.info(language === 'en' ? result.message : result.message);
       }
     } catch (error) {
       console.error("Unexpected error creating admin:", error);

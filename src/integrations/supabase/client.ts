@@ -21,8 +21,19 @@ export const supabase = createClient<Database>(
   }
 );
 
+// Types for the admin user creation function
+type AdminUserCreationResult = {
+  data?: {
+    email: string;
+    password: string;
+    message: string;
+  } | null;
+  error?: any;
+  message?: string;
+};
+
 // إنشاء مستخدم مسؤول جديد
-export const createAdminUser = async () => {
+export const createAdminUser = async (): Promise<AdminUserCreationResult> => {
   try {
     const { data: existingAdmin, error: checkError } = await supabase
       .from('profiles')
@@ -38,7 +49,7 @@ export const createAdminUser = async () => {
     // إذا كان هناك مسؤول بالفعل، لا تقم بإنشاء واحد جديد
     if (existingAdmin) {
       console.log("يوجد مسؤول بالفعل");
-      return { data: existingAdmin, message: "يوجد مسؤول بالفعل" };
+      return { data: null, message: "يوجد مسؤول بالفعل" };
     }
 
     // إنشاء مستخدم مسؤول جديد
