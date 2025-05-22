@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
   getUserDisplayName: () => string;
+  refreshSession: () => Promise<void>;
 }
 
 // Helper function to get user display name
@@ -59,8 +59,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN') {
+          console.log('User signed in:', currentSession?.user?.id);
           toast.success('تم تسجيل الدخول بنجاح');
         } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
           toast.info('تم تسجيل الخروج');
         }
       }
@@ -68,6 +70,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log('Current session check:', currentSession?.user?.id || 'No session');
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
@@ -77,6 +80,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       subscription.unsubscribe();
     };
   }, []);
+
+  const refreshSession = async () => {
+    try {
+      console.log('Refreshing session...');
+      const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
+      if (error) {
+        console.error('Error refreshing session:', error);
+        return;
+      }
+      
+      if (refreshedSession) {
+        console.log('Session refreshed successfully for user:', refreshedSession.user.id);
+        setSession(refreshedSession);
+        setUser(refreshedSession.user);
+      }
+    } catch (error) {
+      console.error('Failed to refresh session:', error);
+    }
+  };
   
   const login = async (email: string, password: string) => {
     try {
@@ -152,7 +174,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       register, 
       forgotPassword,
       logout,
-      getUserDisplayName
+      getUserDisplayName,
+      refreshSession
     }}>
       {children}
     </AuthContext.Provider>

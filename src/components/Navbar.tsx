@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Menu, X, ChevronDown, User, LogOut, UserPlus, LogIn, Moon, Sun, LayoutDashboard } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 const Navbar = () => {
   const { language, setLanguage, t } = useLanguage();
@@ -19,17 +21,20 @@ const Navbar = () => {
   const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Check if the current user has admin role
+  // Check if the current user has admin role with improved error handling
   useEffect(() => {
     const checkAdminRole = async () => {
       if (!isAuthenticated || !user) {
         setIsAdmin(false);
+        setIsLoading(false);
         return;
       }
 
       try {
+        console.log('Checking admin role for user ID:', user.id);
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
@@ -38,18 +43,31 @@ const Navbar = () => {
 
         if (error) {
           console.error('Error fetching user profile:', error);
+          toast.error(language === 'en' 
+            ? 'Failed to check admin status' 
+            : 'فشل في التحقق من حالة المسؤول');
           setIsAdmin(false);
         } else {
-          setIsAdmin(profile?.role === 'admin');
+          console.log('User role from database:', profile?.role);
+          const isUserAdmin = profile?.role === 'admin';
+          setIsAdmin(isUserAdmin);
+          if (isUserAdmin) {
+            console.log('User is confirmed as admin');
+          }
         }
       } catch (error) {
         console.error('Error checking admin role:', error);
+        toast.error(language === 'en' 
+          ? 'Error checking admin role' 
+          : 'خطأ في التحقق من دور المسؤول');
         setIsAdmin(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     checkAdminRole();
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, language]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -157,7 +175,11 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="dark:bg-gray-900">
-                  {isAdmin && (
+                  {isLoading ? (
+                    <DropdownMenuItem disabled className="opacity-50">
+                      <span className="animate-pulse">{language === 'en' ? 'Loading...' : 'جاري التحميل...'}</span>
+                    </DropdownMenuItem>
+                  ) : isAdmin && (
                     <DropdownMenuItem className="dark:text-gray-200 dark:focus:text-white">
                       <Link to="/admin" className="w-full flex items-center">
                         <LayoutDashboard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
@@ -271,7 +293,11 @@ const Navbar = () => {
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
               {isAuthenticated ? (
                 <>
-                  {isAdmin && (
+                  {isLoading ? (
+                    <div className="text-gray-600 dark:text-gray-400 flex items-center py-2">
+                      <span className="animate-pulse">{language === 'en' ? 'Loading...' : 'جاري التحميل...'}</span>
+                    </div>
+                  ) : isAdmin && (
                     <Link to="/admin" className="flex items-center text-gray-700 dark:text-gray-200 hover:text-primary font-medium py-2">
                       <LayoutDashboard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                       <span>{language === 'en' ? 'Admin Dashboard' : 'لوحة التحكم'}</span>
