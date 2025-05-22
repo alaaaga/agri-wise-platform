@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -26,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from '@/hooks/useTheme';
+import { supabase } from '@/integrations/supabase/client';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminArticlesPanel from '@/components/admin/AdminArticlesPanel';
 import AdminVideosPanel from '@/components/admin/AdminVideosPanel';
@@ -38,10 +39,60 @@ const AdminDashboard = () => {
   const { language, t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("overview");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Check if user has admin role
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      if (!isAuthenticated || !user) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user profile:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(profile?.role === 'admin');
+        }
+      } catch (error) {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdminRole();
+  }, [user, isAuthenticated]);
 
   // Admin access check - redirect if not admin
-  if (!isAuthenticated || user?.role !== 'admin') {
-    return <Navigate to="/login" replace />;
+  if (!isAuthenticated || loading) {
+    return (
+      <Layout>
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!isAdmin) {
+    toast.error(
+      language === 'en'
+        ? 'Access denied. Admin privileges required.'
+        : 'تم رفض الوصول. مطلوب امتيازات المسؤول.'
+    );
+    return <Navigate to="/" replace />;
   }
 
   const handleTabChange = (value: string) => {

@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -18,7 +18,38 @@ const Navbar = () => {
   const { user, isAuthenticated, logout, getUserDisplayName } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+
+  // Check if the current user has admin role
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      if (!isAuthenticated || !user) {
+        setIsAdmin(false);
+        return;
+      }
+
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching user profile:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(profile?.role === 'admin');
+        }
+      } catch (error) {
+        console.error('Error checking admin role:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminRole();
+  }, [user, isAuthenticated]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -126,7 +157,7 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="dark:bg-gray-900">
-                  {user?.user_metadata?.role === 'admin' && (
+                  {isAdmin && (
                     <DropdownMenuItem className="dark:text-gray-200 dark:focus:text-white">
                       <Link to="/admin" className="w-full flex items-center">
                         <LayoutDashboard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
@@ -240,7 +271,7 @@ const Navbar = () => {
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
               {isAuthenticated ? (
                 <>
-                  {user?.role === 'admin' && (
+                  {isAdmin && (
                     <Link to="/admin" className="flex items-center text-gray-700 dark:text-gray-200 hover:text-primary font-medium py-2">
                       <LayoutDashboard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                       <span>{language === 'en' ? 'Admin Dashboard' : 'لوحة التحكم'}</span>
