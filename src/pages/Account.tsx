@@ -29,7 +29,7 @@ interface Booking {
 }
 
 const Account = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, getUserDisplayName } = useAuth();
   const { language } = useLanguage();
   const navigate = useNavigate();
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -58,6 +58,9 @@ const Account = () => {
   if (!isAuthenticated || !user) {
     return null;
   }
+
+  const userDisplayName = getUserDisplayName();
+  const userInitial = userDisplayName ? userDisplayName.charAt(0) : '?';
   
   return (
     <Layout>
@@ -67,10 +70,10 @@ const Account = () => {
             <div className="flex flex-col md:flex-row items-center justify-between mb-8">
               <div className="flex items-center mb-4 md:mb-0">
                 <div className="w-16 h-16 bg-agri rounded-full flex items-center justify-center text-white text-2xl">
-                  {user.name.charAt(0)}
+                  {userInitial}
                 </div>
                 <div className="ml-4 rtl:mr-4 rtl:ml-0">
-                  <h1 className="text-2xl font-bold">{user.name}</h1>
+                  <h1 className="text-2xl font-bold">{userDisplayName}</h1>
                   <p className="text-gray-600">{user.email}</p>
                 </div>
               </div>

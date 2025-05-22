@@ -15,7 +15,7 @@ import { Menu, X, ChevronDown, User, LogOut, UserPlus, LogIn, Moon, Sun, LayoutD
 
 const Navbar = () => {
   const { language, setLanguage, t } = useLanguage();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, getUserDisplayName } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -122,11 +122,11 @@ const Navbar = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center space-x-2 rtl:space-x-reverse dark:border-gray-700 dark:text-gray-200">
                     <User className="h-4 w-4" />
-                    <span>{user?.name}</span>
+                    <span>{getUserDisplayName()}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="dark:bg-gray-900">
-                  {user?.role === 'admin' && (
+                  {user?.user_metadata?.role === 'admin' && (
                     <DropdownMenuItem className="dark:text-gray-200 dark:focus:text-white">
                       <Link to="/admin" className="w-full flex items-center">
                         <LayoutDashboard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />

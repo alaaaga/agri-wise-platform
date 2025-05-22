@@ -16,7 +16,8 @@ const Signup = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -39,7 +40,7 @@ const Signup = () => {
     setIsSubmitting(true);
     
     try {
-      await register(name, email, password);
+      await register(email, password, firstName, lastName);
       toast({
         title: language === 'en' ? 'Account Created!' : 'تم إنشاء الحساب!',
         description: language === 'en' 
@@ -74,14 +75,26 @@ const Signup = () => {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">
-                      {language === 'en' ? 'Full Name' : 'الاسم الكامل'}
+                    <Label htmlFor="firstName">
+                      {language === 'en' ? 'First Name' : 'الاسم الأول'}
                     </Label>
                     <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder={language === 'en' ? 'Enter your full name' : 'أدخل اسمك الكامل'}
+                      id="firstName"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      placeholder={language === 'en' ? 'Enter your first name' : 'أدخل اسمك الأول'}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">
+                      {language === 'en' ? 'Last Name' : 'اسم العائلة'}
+                    </Label>
+                    <Input
+                      id="lastName"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      placeholder={language === 'en' ? 'Enter your last name' : 'أدخل اسم العائلة'}
                       required
                     />
                   </div>

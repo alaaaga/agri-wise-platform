@@ -13,7 +13,24 @@ interface AuthContextType {
   register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
+  getUserDisplayName: () => string;
 }
+
+// Helper function to get user display name
+const getUserDisplayNameFromUser = (user: User | null): string => {
+  if (!user) return '';
+  
+  // Try to get name from metadata
+  const firstName = user.user_metadata?.first_name || '';
+  const lastName = user.user_metadata?.last_name || '';
+  
+  if (firstName || lastName) {
+    return `${firstName} ${lastName}`.trim();
+  }
+  
+  // Fallback to email
+  return user.email || '';
+};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -121,6 +138,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
   
+  const getUserDisplayName = () => {
+    return getUserDisplayNameFromUser(user);
+  };
+  
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -130,7 +151,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       login, 
       register, 
       forgotPassword,
-      logout 
+      logout,
+      getUserDisplayName
     }}>
       {children}
     </AuthContext.Provider>
