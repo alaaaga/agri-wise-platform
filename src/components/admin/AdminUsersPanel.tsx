@@ -55,7 +55,7 @@ const AdminUsersPanel = () => {
         // Fetch users from Supabase
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, role, avatar_url');
+          .select('id, last_name, role, avatar_url');
         
         if (profilesError) throw profilesError;
         
@@ -70,7 +70,6 @@ const AdminUsersPanel = () => {
           // Continue with profiles only if auth fails
           const transformedData = profiles.map(profile => ({
             id: profile.id,
-            first_name: profile.first_name || '',
             last_name: profile.last_name || '',
             role: profile.role || 'user',
             status: 'active' as const,
@@ -87,7 +86,8 @@ const AdminUsersPanel = () => {
           return {
             id: profile.id,
             email: authUser?.email || '',
-            first_name: profile.first_name || '',
+            // If first_name doesn't exist in profiles, use empty string
+            first_name: '',
             last_name: profile.last_name || '',
             role: profile.role || 'user',
             status: authUser?.banned ? 'inactive' as const : 'active' as const,

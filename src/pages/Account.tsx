@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
@@ -293,7 +292,7 @@ const Account = () => {
                         <input
                           type="text"
                           className="w-full p-2 border border-gray-300 rounded-md"
-                          defaultValue={user.name}
+                          defaultValue={getUserDisplayName()}
                           disabled
                         />
                       </div>

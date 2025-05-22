@@ -55,14 +55,15 @@ const AdminArticlesPanel = () => {
         if (authorIds.length > 0) {
           const { data: profiles, error: profilesError } = await supabase
             .from('profiles')
-            .select('id, first_name, last_name')
+            .select('id, last_name')
             .in('id', authorIds);
           
           if (profilesError) {
             console.error('Error fetching author profiles:', profilesError);
-          } else {
+          } else if (profiles) {
             profiles.forEach(profile => {
-              authorNames[profile.id] = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown';
+              // Use only last_name since first_name doesn't exist
+              authorNames[profile.id] = profile.last_name || 'Unknown';
             });
           }
         }
