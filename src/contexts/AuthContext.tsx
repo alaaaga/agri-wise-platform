@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,12 +9,14 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   getUserDisplayName: () => string;
   refreshSession: () => Promise<void>;
+  checkAdminRole: () => Promise<boolean>;
 }
 
 // Helper function to get user display name
@@ -50,29 +53,75 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+  
+  // التحقق من دور المسؤول
+  const checkAdminRole = async () => {
+    if (!user) {
+      setIsAdmin(false);
+      return false;
+    }
+    
+    try {
+      console.log('جاري التحقق من دور المسؤول للمستخدم:', user.id);
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('خطأ في استرجاع الملف الشخصي للمستخدم:', error);
+        setIsAdmin(false);
+        return false;
+      }
+
+      const hasAdminRole = profile?.role === 'admin';
+      console.log('نتيجة التحقق من دور المسؤول:', hasAdminRole);
+      setIsAdmin(hasAdminRole);
+      return hasAdminRole;
+    } catch (error) {
+      console.error('خطأ غير متوقع أثناء التحقق من دور المسؤول:', error);
+      setIsAdmin(false);
+      return false;
+    }
+  };
   
   useEffect(() => {
-    // Set up auth state listener
+    // إعداد مستمع لحالة المصادقة
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN') {
-          console.log('User signed in:', currentSession?.user?.id);
+          console.log('تم تسجيل دخول المستخدم:', currentSession?.user?.id);
           toast.success('تم تسجيل الدخول بنجاح');
+          // تأخير استدعاء checkAdminRole لتجنب تعارضات الاستعلامات المتزامنة
+          setTimeout(() => {
+            checkAdminRole();
+          }, 0);
         } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
+          console.log('تم تسجيل خروج المستخدم');
           toast.info('تم تسجيل الخروج');
+          setIsAdmin(false);
         }
       }
     );
     
-    // Check for existing session
+    // التحقق من وجود جلسة
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log('Current session check:', currentSession?.user?.id || 'No session');
+      console.log('التحقق من الجلسة الحالية:', currentSession?.user?.id || 'لا توجد جلسة');
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        // تأخير استدعاء checkAdminRole لتجنب تعارضات الاستعلامات المتزامنة
+        setTimeout(() => {
+          checkAdminRole();
+        }, 0);
+      }
+      
       setIsLoading(false);
     });
     
@@ -83,27 +132,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const refreshSession = async () => {
     try {
-      console.log('Refreshing session...');
+      console.log('جاري تحديث الجلسة...');
       const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
       if (error) {
-        console.error('Error refreshing session:', error);
+        console.error('خطأ في تحديث الجلسة:', error);
         return;
       }
       
       if (refreshedSession) {
-        console.log('Session refreshed successfully for user:', refreshedSession.user.id);
+        console.log('تم تحديث الجلسة بنجاح للمستخدم:', refreshedSession.user.id);
         setSession(refreshedSession);
         setUser(refreshedSession.user);
+        checkAdminRole();
       }
     } catch (error) {
-      console.error('Failed to refresh session:', error);
+      console.error('فشل في تحديث الجلسة:', error);
     }
   };
   
   const login = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      
+      // تحديث حالة المسؤول بعد تسجيل الدخول
+      if (data.user) {
+        await checkAdminRole();
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'حدث خطأ أثناء تسجيل الدخول';
       toast.error(errorMessage);
@@ -170,12 +225,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       session,
       isAuthenticated: !!user, 
       isLoading,
+      isAdmin,
       login, 
       register, 
       forgotPassword,
       logout,
       getUserDisplayName,
-      refreshSession
+      refreshSession,
+      checkAdminRole
     }}>
       {children}
     </AuthContext.Provider>

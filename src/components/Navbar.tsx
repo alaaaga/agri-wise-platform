@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,60 +13,57 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Menu, X, ChevronDown, User, LogOut, UserPlus, LogIn, Moon, Sun, LayoutDashboard } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
+import { createAdminUser } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const { language, setLanguage, t } = useLanguage();
-  const { user, isAuthenticated, logout, getUserDisplayName } = useAuth();
+  const { user, isAuthenticated, isAdmin, logout, getUserDisplayName, checkAdminRole } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const navigate = useNavigate();
-
-  // Check if the current user has admin role with improved error handling
-  useEffect(() => {
-    const checkAdminRole = async () => {
-      if (!isAuthenticated || !user) {
-        setIsAdmin(false);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        console.log('Checking admin role for user ID:', user.id);
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching user profile:', error);
-          toast.error(language === 'en' 
-            ? 'Failed to check admin status' 
-            : 'فشل في التحقق من حالة المسؤول');
-          setIsAdmin(false);
-        } else {
-          console.log('User role from database:', profile?.role);
-          const isUserAdmin = profile?.role === 'admin';
-          setIsAdmin(isUserAdmin);
-          if (isUserAdmin) {
-            console.log('User is confirmed as admin');
-          }
-        }
-      } catch (error) {
-        console.error('Error checking admin role:', error);
+  
+  // إنشاء مستخدم مسؤول
+  const handleCreateAdmin = async () => {
+    if (isCreatingAdmin) return;
+    
+    setIsCreatingAdmin(true);
+    try {
+      const result = await createAdminUser();
+      
+      if (result.error) {
         toast.error(language === 'en' 
-          ? 'Error checking admin role' 
-          : 'خطأ في التحقق من دور المسؤول');
-        setIsAdmin(false);
-      } finally {
-        setIsLoading(false);
+          ? 'Failed to create admin user' 
+          : 'فشل في إنشاء حساب المسؤول');
+        console.error("Create admin error:", result.error);
+      } else if (result.data) {
+        toast.success(language === 'en' 
+          ? 'Admin user created successfully' 
+          : 'تم إنشاء حساب المسؤول بنجاح');
+        console.log("Admin user credentials:", result.data);
+        
+        // عرض بيانات المسؤول للمستخدم
+        toast.success(
+          <div className="space-y-2">
+            <p>{language === 'en' ? 'Admin Credentials:' : 'بيانات المسؤول:'}</p>
+            <p><strong>{language === 'en' ? 'Email:' : 'البريد الإلكتروني:'}</strong> {result.data.email}</p>
+            <p><strong>{language === 'en' ? 'Password:' : 'كلمة المرور:'}</strong> {result.data.password}</p>
+          </div>,
+          { duration: 10000 }
+        );
+        
+        // إعادة التحقق من حالة المسؤول
+        await checkAdminRole();
       }
-    };
-
-    checkAdminRole();
-  }, [user, isAuthenticated, language]);
+    } catch (error) {
+      console.error("Unexpected error creating admin:", error);
+      toast.error(language === 'en' 
+        ? 'An unexpected error occurred' 
+        : 'حدث خطأ غير متوقع');
+    } finally {
+      setIsCreatingAdmin(false);
+    }
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -81,7 +77,19 @@ const Navbar = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
-  // Close mobile menu when route changes
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  // إعادة التحقق من حالة المسؤول عند تغيير المستخدم
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      checkAdminRole();
+    }
+  }, [isAuthenticated, user]);
+
+  // إغلاق القائمة المتنقلة عند تغيير المسار
   useEffect(() => {
     setIsMenuOpen(false);
   }, [navigate]);
@@ -175,11 +183,7 @@ const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="dark:bg-gray-900">
-                  {isLoading ? (
-                    <DropdownMenuItem disabled className="opacity-50">
-                      <span className="animate-pulse">{language === 'en' ? 'Loading...' : 'جاري التحميل...'}</span>
-                    </DropdownMenuItem>
-                  ) : isAdmin && (
+                  {isAdmin && (
                     <DropdownMenuItem className="dark:text-gray-200 dark:focus:text-white">
                       <Link to="/admin" className="w-full flex items-center">
                         <LayoutDashboard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
@@ -192,9 +196,13 @@ const Navbar = () => {
                       {t('nav.account')}
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={logout} className="flex items-center dark:text-gray-200 dark:focus:text-white">
+                  <DropdownMenuItem onClick={handleLogout} className="flex items-center dark:text-gray-200 dark:focus:text-white">
                     <LogOut className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                    <span>Logout</span>
+                    <span>تسجيل الخروج</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleCreateAdmin} disabled={isCreatingAdmin} className="flex items-center dark:text-gray-200 dark:focus:text-white">
+                    <UserPlus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                    <span>{isCreatingAdmin ? 'جاري الإنشاء...' : 'إنشاء حساب مسؤول'}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -293,11 +301,7 @@ const Navbar = () => {
             <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2">
               {isAuthenticated ? (
                 <>
-                  {isLoading ? (
-                    <div className="text-gray-600 dark:text-gray-400 flex items-center py-2">
-                      <span className="animate-pulse">{language === 'en' ? 'Loading...' : 'جاري التحميل...'}</span>
-                    </div>
-                  ) : isAdmin && (
+                  {isAdmin && (
                     <Link to="/admin" className="flex items-center text-gray-700 dark:text-gray-200 hover:text-primary font-medium py-2">
                       <LayoutDashboard className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                       <span>{language === 'en' ? 'Admin Dashboard' : 'لوحة التحكم'}</span>
@@ -308,14 +312,20 @@ const Navbar = () => {
                   </Link>
                   <Button 
                     variant="outline" 
-                    onClick={() => {
-                      logout();
-                      toggleMenu();
-                    }}
+                    onClick={handleLogout}
                     className="w-full justify-start dark:border-gray-700 dark:text-gray-200"
                   >
                     <LogOut className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                    <span>Logout</span>
+                    <span>{language === 'en' ? 'Logout' : 'تسجيل الخروج'}</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCreateAdmin}
+                    disabled={isCreatingAdmin}
+                    className="w-full justify-start dark:border-gray-700 dark:text-gray-200"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                    <span>{isCreatingAdmin ? 'جاري الإنشاء...' : 'إنشاء حساب مسؤول'}</span>
                   </Button>
                 </>
               ) : (

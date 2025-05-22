@@ -20,3 +20,70 @@ export const supabase = createClient<Database>(
     }
   }
 );
+
+// إنشاء مستخدم مسؤول جديد
+export const createAdminUser = async () => {
+  try {
+    const { data: existingAdmin, error: checkError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'admin')
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error("خطأ في التحقق من المسؤولين الحاليين:", checkError);
+      return { error: checkError };
+    }
+    
+    // إذا كان هناك مسؤول بالفعل، لا تقم بإنشاء واحد جديد
+    if (existingAdmin) {
+      console.log("يوجد مسؤول بالفعل");
+      return { data: existingAdmin, message: "يوجد مسؤول بالفعل" };
+    }
+
+    // إنشاء مستخدم مسؤول جديد
+    const adminEmail = "admin@agri-consultant.com";
+    const adminPassword = "Admin123456";
+    
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: adminEmail,
+      password: adminPassword,
+      options: {
+        data: {
+          first_name: "المسؤول",
+          last_name: "الرئيسي",
+          role: "admin"
+        }
+      }
+    });
+    
+    if (signUpError) {
+      console.error("خطأ في إنشاء حساب المسؤول:", signUpError);
+      return { error: signUpError };
+    }
+    
+    // تحديث دور المستخدم إلى مسؤول في جدول الملفات الشخصية
+    if (signUpData?.user) {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ role: 'admin' })
+        .eq('id', signUpData.user.id);
+      
+      if (updateError) {
+        console.error("خطأ في تحديث دور المسؤول:", updateError);
+        return { error: updateError };
+      }
+    }
+    
+    return { 
+      data: { 
+        email: adminEmail, 
+        password: adminPassword,
+        message: "تم إنشاء حساب المسؤول بنجاح" 
+      } 
+    };
+  } catch (error) {
+    console.error("خطأ غير متوقع:", error);
+    return { error };
+  }
+};

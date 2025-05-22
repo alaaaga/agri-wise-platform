@@ -21,12 +21,13 @@ import {
   Moon,
   Sun,
   Settings,
-  BarChart
+  BarChart,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from '@/hooks/useTheme';
-import { supabase } from '@/integrations/supabase/client';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminArticlesPanel from '@/components/admin/AdminArticlesPanel';
 import AdminVideosPanel from '@/components/admin/AdminVideosPanel';
@@ -35,65 +36,36 @@ import AdminBookingsPanel from '@/components/admin/AdminBookingsPanel';
 import { toast } from "@/components/ui/sonner";
 
 const AdminDashboard = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isAdmin, checkAdminRole } = useAuth();
   const { language, t } = useLanguage();
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState("overview");
-  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [adminCheckCompleted, setAdminCheckCompleted] = useState(false);
 
-  // Check if user has admin role
+  // عند تحميل الصفحة، تأكد من تحديث حالة المسؤول
   useEffect(() => {
-    const checkAdminRole = async () => {
+    const verifyAdminRole = async () => {
       if (!isAuthenticated || !user) {
-        setIsAdmin(false);
         setLoading(false);
+        setAdminCheckCompleted(true);
         return;
       }
 
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching user profile:', error);
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(profile?.role === 'admin');
-        }
+        console.log('التحقق من دور المسؤول في صفحة الإدارة...');
+        const isUserAdmin = await checkAdminRole();
+        console.log('نتيجة التحقق من دور المسؤول في صفحة الإدارة:', isUserAdmin);
+        setAdminCheckCompleted(true);
       } catch (error) {
-        console.error('Error checking admin role:', error);
-        setIsAdmin(false);
+        console.error('خطأ في التحقق من دور المسؤول:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    checkAdminRole();
-  }, [user, isAuthenticated]);
-
-  // Admin access check - redirect if not admin
-  if (!isAuthenticated || loading) {
-    return (
-      <Layout>
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!isAdmin) {
-    toast.error(
-      language === 'en'
-        ? 'Access denied. Admin privileges required.'
-        : 'تم رفض الوصول. مطلوب امتيازات المسؤول.'
-    );
-    return <Navigate to="/" replace />;
-  }
+    verifyAdminRole();
+  }, [user, isAuthenticated, checkAdminRole]);
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -111,6 +83,40 @@ const AdminDashboard = () => {
       : `عرض قسم ${tabNames[value]}`
     );
   };
+
+  // عرض شاشة التحميل
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex flex-col justify-center items-center min-h-screen">
+          <Loader2 className="animate-spin h-12 w-12 text-primary mb-4" />
+          <div className="text-lg font-medium text-gray-700 dark:text-gray-300">
+            {language === 'en' ? 'Loading dashboard...' : 'جاري تحميل لوحة التحكم...'}
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // التحقق من أن المستخدم مصرح له
+  if (!isAuthenticated) {
+    toast.error(
+      language === 'en'
+        ? 'You must be logged in to access the admin dashboard.'
+        : 'يجب تسجيل الدخول للوصول إلى لوحة تحكم المسؤول.'
+    );
+    return <Navigate to="/login" replace />;
+  }
+
+  // التحقق من أن المستخدم لديه صلاحيات المسؤول
+  if (adminCheckCompleted && !isAdmin) {
+    toast.error(
+      language === 'en'
+        ? 'Access denied. Admin privileges required.'
+        : 'تم رفض الوصول. مطلوب امتيازات المسؤول.'
+    );
+    return <Navigate to="/" replace />;
+  }
 
   const dashboardItems = [
     { count: 24, label: language === 'en' ? 'Total Articles' : 'إجمالي المقالات', color: 'bg-blue-100 dark:bg-blue-900', icon: FileText },
