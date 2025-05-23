@@ -35,6 +35,7 @@ type AdminUserCreationResult = {
 // إنشاء مستخدم مسؤول جديد
 export const createAdminUser = async (): Promise<AdminUserCreationResult> => {
   try {
+    // التحقق من وجود مسؤول حالي
     const { data: existingAdmin, error: checkError } = await supabase
       .from('profiles')
       .select('*')
@@ -43,7 +44,7 @@ export const createAdminUser = async (): Promise<AdminUserCreationResult> => {
     
     if (checkError && checkError.code !== 'PGRST116') {
       console.error("خطأ في التحقق من المسؤولين الحاليين:", checkError);
-      return { error: checkError };
+      return { error: checkError, message: "فشل في التحقق من وجود مسؤولين حاليين" };
     }
     
     // إذا كان هناك مسؤول بالفعل، لا تقم بإنشاء واحد جديد
@@ -56,6 +57,7 @@ export const createAdminUser = async (): Promise<AdminUserCreationResult> => {
     const adminEmail = "admin@agri-consultant.com";
     const adminPassword = "Admin123456";
     
+    // إنشاء المستخدم في نظام المصادقة
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: adminEmail,
       password: adminPassword,
@@ -70,7 +72,7 @@ export const createAdminUser = async (): Promise<AdminUserCreationResult> => {
     
     if (signUpError) {
       console.error("خطأ في إنشاء حساب المسؤول:", signUpError);
-      return { error: signUpError };
+      return { error: signUpError, message: "فشل في إنشاء حساب المسؤول" };
     }
     
     // تحديث دور المستخدم إلى مسؤول في جدول الملفات الشخصية
@@ -82,8 +84,10 @@ export const createAdminUser = async (): Promise<AdminUserCreationResult> => {
       
       if (updateError) {
         console.error("خطأ في تحديث دور المسؤول:", updateError);
-        return { error: updateError };
+        return { error: updateError, message: "فشل في تعيين دور المسؤول" };
       }
+      
+      console.log("تم إنشاء حساب المسؤول بنجاح:", signUpData.user.id);
     }
     
     return { 
@@ -95,6 +99,6 @@ export const createAdminUser = async (): Promise<AdminUserCreationResult> => {
     };
   } catch (error) {
     console.error("خطأ غير متوقع:", error);
-    return { error };
+    return { error, message: "حدث خطأ غير متوقع أثناء إنشاء حساب المسؤول" };
   }
 };

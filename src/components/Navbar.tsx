@@ -32,8 +32,8 @@ const Navbar = () => {
       
       if (result.error) {
         toast.error(language === 'en' 
-          ? 'Failed to create admin user' 
-          : 'فشل في إنشاء حساب المسؤول');
+          ? 'Failed to create admin user: ' + (result.message || '') 
+          : 'فشل في إنشاء حساب المسؤول: ' + (result.message || ''));
         console.error("Create admin error:", result.error);
       } else if (result.data) {
         toast.success(language === 'en' 
@@ -88,7 +88,7 @@ const Navbar = () => {
     if (isAuthenticated && user) {
       checkAdminRole();
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, checkAdminRole]);
 
   // إغلاق القائمة المتنقلة عند تغيير المسار
   useEffect(() => {

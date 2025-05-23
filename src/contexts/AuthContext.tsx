@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isAdmin, setIsAdmin] = useState(false);
   
   // التحقق من دور المسؤول
-  const checkAdminRole = async () => {
+  const checkAdminRole = useCallback(async () => {
     if (!user) {
       setIsAdmin(false);
       return false;
@@ -77,7 +77,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       const hasAdminRole = profile?.role === 'admin';
-      console.log('نتيجة التحقق من دور المسؤول:', hasAdminRole);
+      console.log('نتيجة التحقق من دور المسؤول:', hasAdminRole, 'للمستخدم:', user.id);
       setIsAdmin(hasAdminRole);
       return hasAdminRole;
     } catch (error) {
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setIsAdmin(false);
       return false;
     }
-  };
+  }, [user]);
   
   useEffect(() => {
     // إعداد مستمع لحالة المصادقة
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [checkAdminRole]);
 
   const refreshSession = async () => {
     try {
@@ -174,7 +174,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         options: {
           data: {
             first_name: firstName,
-            last_name: lastName
+            last_name: lastName,
+            role: 'user'
           }
         }
       });
