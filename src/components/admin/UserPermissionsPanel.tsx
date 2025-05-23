@@ -107,8 +107,14 @@ const UserPermissionsPanel = () => {
           return;
         }
         
-        // Type assertion to handle potential type issues
-        let usersWithPermissions: UserPermission[] = profilesList.map((profile: any) => {
+        // Use explicit type annotation for each profile to fix "never" type error
+        let usersWithPermissions: UserPermission[] = profilesList.map((profile: {
+          id: string;
+          first_name?: string;
+          last_name?: string;
+          role?: string;
+          permissions: Json | null;
+        }) => {
           if (!profile || typeof profile !== 'object') {
             return {
               id: 'unknown',
@@ -170,8 +176,7 @@ const UserPermissionsPanel = () => {
     try {
       setSaving(true);
       
-      // Update permissions in the database
-      // Use a proper type casting approach for TypeScript
+      // Update permissions in the database with proper type casting
       const { error } = await supabase
         .from('profiles')
         .update({ permissions: selectedUser.permissions as unknown as Json })
