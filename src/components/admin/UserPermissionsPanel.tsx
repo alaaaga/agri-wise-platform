@@ -158,7 +158,7 @@ const UserPermissionsPanel = () => {
       // Update permissions in the database
       const { error } = await supabase
         .from('profiles')
-        .update({ permissions: selectedUser.permissions })
+        .update({ permissions: selectedUser.permissions as Json })
         .eq('id', selectedUser.id);
       
       if (error) throw error;
