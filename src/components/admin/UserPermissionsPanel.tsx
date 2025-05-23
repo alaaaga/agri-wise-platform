@@ -98,17 +98,31 @@ const UserPermissionsPanel = () => {
           console.error('Error fetching auth users:', authError);
         }
         
-        if (!profiles) {
+        // Make sure profiles is an array before proceeding
+        const profilesList = Array.isArray(profiles) ? profiles : [];
+        
+        if (profilesList.length === 0) {
           setUsers([]);
           return;
         }
         
-        let usersWithPermissions: UserPermission[] = profiles.map(profile => {
+        let usersWithPermissions: UserPermission[] = profilesList.map(profile => {
+          if (!profile || typeof profile !== 'object') {
+            return {
+              id: 'unknown',
+              email: '',
+              first_name: '',
+              last_name: '',
+              role: 'user',
+              permissions: ensurePermissionsStructure(null)
+            };
+          }
+          
           // Find matching auth user to get email
           const authUser = authData?.users?.find(user => user.id === profile.id);
           
           return {
-            id: profile.id,
+            id: profile.id || 'unknown',
             email: authUser?.email || '',
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
