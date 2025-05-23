@@ -29,6 +29,14 @@ import { Database } from 'lucide-react';
 import { Loader2, Settings } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import { Json } from '@/integrations/supabase/types';
+
+interface UserPermissions {
+  can_create_articles: boolean;
+  can_edit_articles: boolean;
+  can_delete_articles: boolean;
+  can_manage_users: boolean;
+}
 
 interface UserPermission {
   id: string;
@@ -36,13 +44,32 @@ interface UserPermission {
   first_name?: string;
   last_name?: string;
   role: string;
-  permissions: {
-    can_create_articles: boolean;
-    can_edit_articles: boolean;
-    can_delete_articles: boolean;
-    can_manage_users: boolean;
-  };
+  permissions: UserPermissions;
 }
+
+// Helper function to ensure permissions object has the correct structure
+const ensurePermissionsStructure = (permissions: Json | null): UserPermissions => {
+  const defaultPermissions: UserPermissions = {
+    can_create_articles: false,
+    can_edit_articles: false,
+    can_delete_articles: false,
+    can_manage_users: false
+  };
+  
+  if (!permissions) return defaultPermissions;
+  
+  // Check if permissions is an object
+  if (typeof permissions === 'object' && permissions !== null && !Array.isArray(permissions)) {
+    return {
+      can_create_articles: Boolean(permissions.can_create_articles),
+      can_edit_articles: Boolean(permissions.can_edit_articles),
+      can_delete_articles: Boolean(permissions.can_delete_articles),
+      can_manage_users: Boolean(permissions.can_manage_users)
+    };
+  }
+  
+  return defaultPermissions;
+};
 
 const UserPermissionsPanel = () => {
   const { language } = useLanguage();
@@ -66,11 +93,20 @@ const UserPermissionsPanel = () => {
         if (error) throw error;
         
         // Get user emails from auth (only available to admin)
-        const { data: authUsersData, error: authError } = await supabase.auth.admin.listUsers();
+        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+        
+        if (authError) {
+          console.error('Error fetching auth users:', authError);
+        }
+        
+        if (!profiles) {
+          setUsers([]);
+          return;
+        }
         
         let usersWithPermissions: UserPermission[] = profiles.map(profile => {
           // Find matching auth user to get email
-          const authUser = authUsersData?.users?.find(user => user.id === profile.id);
+          const authUser = authData?.users?.find(user => user.id === profile.id);
           
           return {
             id: profile.id,
@@ -78,12 +114,7 @@ const UserPermissionsPanel = () => {
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
             role: profile.role || 'user',
-            permissions: profile.permissions || {
-              can_create_articles: false,
-              can_edit_articles: false,
-              can_delete_articles: false,
-              can_manage_users: false
-            }
+            permissions: ensurePermissionsStructure(profile.permissions)
           };
         });
         
@@ -106,7 +137,7 @@ const UserPermissionsPanel = () => {
     setPermissionsDialogOpen(true);
   };
 
-  const updatePermission = (permission: keyof UserPermission['permissions'], value: boolean) => {
+  const updatePermission = (permission: keyof UserPermissions, value: boolean) => {
     if (!selectedUser) return;
     
     setSelectedUser({
