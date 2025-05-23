@@ -157,6 +157,27 @@ export type Database = {
           },
         ]
       }
+      newsletter_subscribers: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          subscribed: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          subscribed?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          subscribed?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -165,6 +186,8 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          newsletter_subscribed: boolean | null
+          permissions: Json | null
           role: string | null
           updated_at: string | null
         }
@@ -175,6 +198,8 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          newsletter_subscribed?: boolean | null
+          permissions?: Json | null
           role?: string | null
           updated_at?: string | null
         }
@@ -185,6 +210,8 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          newsletter_subscribed?: boolean | null
+          permissions?: Json | null
           role?: string | null
           updated_at?: string | null
         }

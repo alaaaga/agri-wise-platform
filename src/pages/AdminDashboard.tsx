@@ -23,7 +23,8 @@ import {
   Settings,
   BarChart,
   AlertCircle,
-  Loader2
+  Loader2,
+  Database
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -33,6 +34,7 @@ import AdminArticlesPanel from '@/components/admin/AdminArticlesPanel';
 import AdminVideosPanel from '@/components/admin/AdminVideosPanel';
 import AdminCaseStudiesPanel from '@/components/admin/AdminCaseStudiesPanel';
 import AdminBookingsPanel from '@/components/admin/AdminBookingsPanel';
+import UserPermissionsPanel from '@/components/admin/UserPermissionsPanel';
 import { toast } from "@/components/ui/sonner";
 
 const AdminDashboard = () => {
@@ -76,6 +78,7 @@ const AdminDashboard = () => {
       cases: language === 'en' ? 'Case Studies' : 'دراسات الحالة',
       users: language === 'en' ? 'Users' : 'المستخدمين',
       bookings: language === 'en' ? 'Bookings' : 'الحجوزات',
+      permissions: language === 'en' ? 'Permissions' : 'الصلاحيات',
     };
     
     toast.success(language === 'en' 
@@ -176,6 +179,10 @@ const AdminDashboard = () => {
               <Users className="h-4 w-4" />
               <span>{language === 'en' ? 'Users' : 'المستخدمين'}</span>
             </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              <span>{language === 'en' ? 'Permissions' : 'الصلاحيات'}</span>
+            </TabsTrigger>
             <TabsTrigger value="bookings" className="flex items-center gap-2">
               <CalendarCheck className="h-4 w-4" />
               <span>{language === 'en' ? 'Bookings' : 'الحجوزات'}</span>
@@ -262,6 +269,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="users">
             <AdminUsersPanel />
+          </TabsContent>
+          
+          <TabsContent value="permissions">
+            <UserPermissionsPanel />
           </TabsContent>
 
           <TabsContent value="bookings">

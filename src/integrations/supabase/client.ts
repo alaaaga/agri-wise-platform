@@ -21,84 +21,12 @@ export const supabase = createClient<Database>(
   }
 );
 
-// Types for the admin user creation function
-type AdminUserCreationResult = {
-  data?: {
-    email: string;
-    password: string;
-    message: string;
-  } | null;
-  error?: any;
-  message?: string;
-};
-
-// إنشاء مستخدم مسؤول جديد
-export const createAdminUser = async (): Promise<AdminUserCreationResult> => {
-  try {
-    // التحقق من وجود مسؤول حالي
-    const { data: existingAdmin, error: checkError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'admin')
-      .single();
-    
-    if (checkError && checkError.code !== 'PGRST116') {
-      console.error("خطأ في التحقق من المسؤولين الحاليين:", checkError);
-      return { error: checkError, message: "فشل في التحقق من وجود مسؤولين حاليين" };
-    }
-    
-    // إذا كان هناك مسؤول بالفعل، لا تقم بإنشاء واحد جديد
-    if (existingAdmin) {
-      console.log("يوجد مسؤول بالفعل");
-      return { data: null, message: "يوجد مسؤول بالفعل" };
-    }
-
-    // إنشاء مستخدم مسؤول جديد
-    const adminEmail = "admin@agri-consultant.com";
-    const adminPassword = "Admin123456";
-    
-    // إنشاء المستخدم في نظام المصادقة
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: adminEmail,
-      password: adminPassword,
-      options: {
-        data: {
-          first_name: "المسؤول",
-          last_name: "الرئيسي",
-          role: "admin"
-        }
-      }
-    });
-    
-    if (signUpError) {
-      console.error("خطأ في إنشاء حساب المسؤول:", signUpError);
-      return { error: signUpError, message: "فشل في إنشاء حساب المسؤول" };
-    }
-    
-    // تحديث دور المستخدم إلى مسؤول في جدول الملفات الشخصية
-    if (signUpData?.user) {
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ role: 'admin' })
-        .eq('id', signUpData.user.id);
-      
-      if (updateError) {
-        console.error("خطأ في تحديث دور المسؤول:", updateError);
-        return { error: updateError, message: "فشل في تعيين دور المسؤول" };
-      }
-      
-      console.log("تم إنشاء حساب المسؤول بنجاح:", signUpData.user.id);
-    }
-    
-    return { 
-      data: { 
-        email: adminEmail, 
-        password: adminPassword,
-        message: "تم إنشاء حساب المسؤول بنجاح" 
-      } 
-    };
-  } catch (error) {
-    console.error("خطأ غير متوقع:", error);
-    return { error, message: "حدث خطأ غير متوقع أثناء إنشاء حساب المسؤول" };
-  }
+// Admin user details for reference
+// Note: This doesn't create an admin user; the SQL migration handles that
+export const getAdminCredentials = () => {
+  return {
+    email: 'admin@agri-consultant.com',
+    password: 'Admin123456', // This is a default password that should be changed
+    note: 'This admin account was created through SQL migration. For security reasons, please change the password after first login.'
+  };
 };

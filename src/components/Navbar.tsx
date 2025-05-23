@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,59 +13,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Menu, X, ChevronDown, User, LogOut, UserPlus, LogIn, Moon, Sun, LayoutDashboard } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
-import { createAdminUser } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const { language, setLanguage, t } = useLanguage();
   const { user, isAuthenticated, isAdmin, logout, getUserDisplayName, checkAdminRole } = useAuth();
   const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
   const navigate = useNavigate();
-  
-  // إنشاء مستخدم مسؤول
-  const handleCreateAdmin = async () => {
-    if (isCreatingAdmin) return;
-    
-    setIsCreatingAdmin(true);
-    try {
-      const result = await createAdminUser();
-      
-      if (result.error) {
-        toast.error(language === 'en' 
-          ? 'Failed to create admin user: ' + (result.message || '') 
-          : 'فشل في إنشاء حساب المسؤول: ' + (result.message || ''));
-        console.error("Create admin error:", result.error);
-      } else if (result.data) {
-        toast.success(language === 'en' 
-          ? 'Admin user created successfully' 
-          : 'تم إنشاء حساب المسؤول بنجاح');
-        console.log("Admin user credentials:", result.data);
-        
-        // عرض بيانات المسؤول للمستخدم
-        toast.success(
-          <div className="space-y-2">
-            <p>{language === 'en' ? 'Admin Credentials:' : 'بيانات المسؤول:'}</p>
-            {result.data.email && <p><strong>{language === 'en' ? 'Email:' : 'البريد الإلكتروني:'}</strong> {result.data.email}</p>}
-            {result.data.password && <p><strong>{language === 'en' ? 'Password:' : 'كلمة المرور:'}</strong> {result.data.password}</p>}
-          </div>,
-          { duration: 10000 }
-        );
-        
-        // إعادة التحقق من حالة المسؤول
-        await checkAdminRole();
-      } else if (result.message) {
-        toast.info(language === 'en' ? result.message : result.message);
-      }
-    } catch (error) {
-      console.error("Unexpected error creating admin:", error);
-      toast.error(language === 'en' 
-        ? 'An unexpected error occurred' 
-        : 'حدث خطأ غير متوقع');
-    } finally {
-      setIsCreatingAdmin(false);
-    }
-  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -201,10 +156,6 @@ const Navbar = () => {
                     <LogOut className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     <span>تسجيل الخروج</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleCreateAdmin} disabled={isCreatingAdmin} className="flex items-center dark:text-gray-200 dark:focus:text-white">
-                    <UserPlus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                    <span>{isCreatingAdmin ? 'جاري الإنشاء...' : 'إنشاء حساب مسؤول'}</span>
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
@@ -318,15 +269,6 @@ const Navbar = () => {
                   >
                     <LogOut className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     <span>{language === 'en' ? 'Logout' : 'تسجيل الخروج'}</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleCreateAdmin}
-                    disabled={isCreatingAdmin}
-                    className="w-full justify-start dark:border-gray-700 dark:text-gray-200"
-                  >
-                    <UserPlus className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                    <span>{isCreatingAdmin ? 'جاري الإنشاء...' : 'إنشاء حساب مسؤول'}</span>
                   </Button>
                 </>
               ) : (
