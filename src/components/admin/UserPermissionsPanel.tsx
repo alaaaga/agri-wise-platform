@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
@@ -106,7 +107,8 @@ const UserPermissionsPanel = () => {
           return;
         }
         
-        let usersWithPermissions: UserPermission[] = profilesList.map(profile => {
+        // Type assertion to handle potential type issues
+        let usersWithPermissions: UserPermission[] = profilesList.map((profile: any) => {
           if (!profile || typeof profile !== 'object') {
             return {
               id: 'unknown',
@@ -169,12 +171,10 @@ const UserPermissionsPanel = () => {
       setSaving(true);
       
       // Update permissions in the database
-      // First convert UserPermissions to unknown then to Json
-      const permissionsAsJson = selectedUser.permissions as unknown as Json;
-      
+      // Use a proper type casting approach for TypeScript
       const { error } = await supabase
         .from('profiles')
-        .update({ permissions: permissionsAsJson })
+        .update({ permissions: selectedUser.permissions as unknown as Json })
         .eq('id', selectedUser.id);
       
       if (error) throw error;
