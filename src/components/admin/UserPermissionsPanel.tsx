@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { 
@@ -156,9 +155,12 @@ const UserPermissionsPanel = () => {
       setSaving(true);
       
       // Update permissions in the database
+      // First convert UserPermissions to unknown then to Json
+      const permissionsAsJson = selectedUser.permissions as unknown as Json;
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ permissions: selectedUser.permissions as Json })
+        .update({ permissions: permissionsAsJson })
         .eq('id', selectedUser.id);
       
       if (error) throw error;
