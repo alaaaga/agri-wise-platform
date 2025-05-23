@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
@@ -20,6 +20,7 @@ const Navbar = () => {
   const { theme, setTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -34,8 +35,14 @@ const Navbar = () => {
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/');
+    try {
+      await logout();
+      toast.success(language === 'en' ? 'Successfully logged out' : 'تم تسجيل الخروج بنجاح');
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error(language === 'en' ? 'Failed to log out. Please try again.' : 'فشل تسجيل الخروج. يرجى المحاولة مرة أخرى.');
+    }
   };
 
   // إعادة التحقق من حالة المسؤول عند تغيير المستخدم
@@ -48,7 +55,7 @@ const Navbar = () => {
   // إغلاق القائمة المتنقلة عند تغيير المسار
   useEffect(() => {
     setIsMenuOpen(false);
-  }, [navigate]);
+  }, [location.pathname]);
 
   return (
     <nav className={`bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50 transition-colors duration-300`}>
@@ -154,7 +161,7 @@ const Navbar = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="flex items-center dark:text-gray-200 dark:focus:text-white">
                     <LogOut className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                    <span>تسجيل الخروج</span>
+                    <span>{language === 'en' ? 'Logout' : 'تسجيل الخروج'}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

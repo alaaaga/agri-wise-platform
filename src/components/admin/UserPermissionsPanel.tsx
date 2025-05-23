@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Json } from '@/integrations/supabase/types';
 
+// Define proper interfaces for our data types
 interface UserPermissions {
   can_create_articles: boolean;
   can_edit_articles: boolean;
@@ -71,6 +72,21 @@ const ensurePermissionsStructure = (permissions: Json | null): UserPermissions =
   return defaultPermissions;
 };
 
+// Define the profile type to avoid "never" type errors
+interface ProfileData {
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  role?: string | null;
+  permissions: Json | null;
+}
+
+// Define auth user type
+interface AuthUser {
+  id: string;
+  email?: string;
+}
+
 const UserPermissionsPanel = () => {
   const { language } = useLanguage();
   const [users, setUsers] = useState<UserPermission[]>([]);
@@ -107,15 +123,10 @@ const UserPermissionsPanel = () => {
           return;
         }
         
-        // Use explicit type annotation for each profile to fix "never" type error
-        let usersWithPermissions: UserPermission[] = profilesList.map((profile: {
-          id: string;
-          first_name?: string;
-          last_name?: string;
-          role?: string;
-          permissions: Json | null;
-        }) => {
-          if (!profile || typeof profile !== 'object') {
+        // Map the profiles to UserPermission objects with proper type safety
+        let usersWithPermissions: UserPermission[] = profilesList.map((profile: ProfileData) => {
+          // Ensure profile is valid
+          if (!profile || typeof profile !== 'object' || !profile.id) {
             return {
               id: 'unknown',
               email: '',
@@ -127,8 +138,9 @@ const UserPermissionsPanel = () => {
           }
           
           // Find matching auth user to get email
-          const authUser = authData?.users?.find(user => user.id === profile.id);
+          const authUser = authData?.users?.find((user: AuthUser) => user.id === profile.id);
           
+          // Return the mapped user with permissions
           return {
             id: profile.id || 'unknown',
             email: authUser?.email || '',

@@ -28,15 +28,25 @@ const Login = () => {
   // إعادة توجيه المستخدم المصادق عليه بالفعل
   useEffect(() => {
     if (isAuthenticated && !authLoading) {
+      console.log('المستخدم مسجل الدخول بالفعل، جاري التوجيه إلى:', from);
       navigate(from);
     }
   }, [isAuthenticated, authLoading, navigate, from]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email.trim() || !password) {
+      toast.error(language === 'en' 
+        ? 'Please enter both email and password' 
+        : 'الرجاء إدخال البريد الإلكتروني وكلمة المرور');
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
+      console.log('جاري محاولة تسجيل الدخول...');
       await login(email, password);
       
       toast.success(language === 'en' 
@@ -48,11 +58,12 @@ const Login = () => {
         callback();
       }
       
+      console.log('تسجيل الدخول ناجح، جاري التوجيه إلى:', from);
       // التنقل إلى الصفحة السابقة
       navigate(from);
     } catch (error) {
-      // تم معالجة الخطأ داخل دالة login
-      console.error('Login failed:', error);
+      console.error('تسجيل الدخول فشل:', error);
+      // لا داعي لإظهار رسالة هنا لأن الخطأ يتم التعامل معه داخل دالة login
     } finally {
       setIsSubmitting(false);
     }
