@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,11 +23,13 @@ import {
   BarChart,
   AlertCircle,
   Loader2,
-  Database
+  Database,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from '@/hooks/useTheme';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminArticlesPanel from '@/components/admin/AdminArticlesPanel';
 import AdminVideosPanel from '@/components/admin/AdminVideosPanel';
@@ -44,6 +45,16 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
   const [adminCheckCompleted, setAdminCheckCompleted] = useState(false);
+  
+  const {
+    stats,
+    activities,
+    loading: statsLoading,
+    error: statsError,
+    refreshStats,
+    getStatValue,
+    getActivityText
+  } = useDashboardStats();
 
   // عند تحميل الصفحة، تأكد من تحديث حالة المسؤول
   useEffect(() => {
@@ -122,11 +133,36 @@ const AdminDashboard = () => {
   }
 
   const dashboardItems = [
-    { count: 24, label: language === 'en' ? 'Total Articles' : 'إجمالي المقالات', color: 'bg-blue-100 dark:bg-blue-900', icon: FileText },
-    { count: 18, label: language === 'en' ? 'Total Videos' : 'إجمالي الفيديوهات', color: 'bg-green-100 dark:bg-green-900', icon: Video },
-    { count: 12, label: language === 'en' ? 'Case Studies' : 'دراسات حالة', color: 'bg-yellow-100 dark:bg-yellow-900', icon: BookOpenText },
-    { count: 32, label: language === 'en' ? 'Active Users' : 'المستخدمين النشطين', color: 'bg-indigo-100 dark:bg-indigo-900', icon: Users },
-    { count: 8, label: language === 'en' ? 'Pending Bookings' : 'الحجوزات المعلقة', color: 'bg-red-100 dark:bg-red-900', icon: CalendarCheck }
+    { 
+      count: getStatValue('total_articles'), 
+      label: language === 'en' ? 'Total Articles' : 'إجمالي المقالات', 
+      color: 'bg-blue-100 dark:bg-blue-900', 
+      icon: FileText 
+    },
+    { 
+      count: getStatValue('total_videos'), 
+      label: language === 'en' ? 'Total Videos' : 'إجمالي الفيديوهات', 
+      color: 'bg-green-100 dark:bg-green-900', 
+      icon: Video 
+    },
+    { 
+      count: getStatValue('case_studies'), 
+      label: language === 'en' ? 'Case Studies' : 'دراسات حالة', 
+      color: 'bg-yellow-100 dark:bg-yellow-900', 
+      icon: BookOpenText 
+    },
+    { 
+      count: getStatValue('active_users'), 
+      label: language === 'en' ? 'Active Users' : 'المستخدمين النشطين', 
+      color: 'bg-indigo-100 dark:bg-indigo-900', 
+      icon: Users 
+    },
+    { 
+      count: getStatValue('pending_bookings'), 
+      label: language === 'en' ? 'Pending Bookings' : 'الحجوزات المعلقة', 
+      color: 'bg-red-100 dark:bg-red-900', 
+      icon: CalendarCheck 
+    }
   ];
 
   const handleQuickAction = (action: string) => {
@@ -140,6 +176,12 @@ const AdminDashboard = () => {
     setActiveTab(action === 'article' ? 'articles' : action === 'video' ? 'videos' : 'cases');
   };
 
+  const handleRefreshStats = async () => {
+    toast.info(language === 'en' ? 'Refreshing statistics...' : 'جاري تحديث الإحصائيات...');
+    await refreshStats();
+    toast.success(language === 'en' ? 'Statistics updated!' : 'تم تحديث الإحصائيات!');
+  };
+
   return (
     <Layout>
       <div className="py-6 px-4 sm:px-6 lg:px-8 min-h-screen">
@@ -147,13 +189,19 @@ const AdminDashboard = () => {
           <h1 className="text-2xl font-semibold">
             {language === 'en' ? 'Admin Dashboard' : 'لوحة تحكم المسؤول'}
           </h1>
-          <div className="flex items-center gap-2">
-            <Sun className="h-4 w-4 text-yellow-500" />
-            <Switch
-              checked={theme === 'dark'}
-              onCheckedChange={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            />
-            <Moon className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+          <div className="flex items-center gap-4">
+            <Button onClick={handleRefreshStats} variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              {language === 'en' ? 'Refresh' : 'تحديث'}
+            </Button>
+            <div className="flex items-center gap-2">
+              <Sun className="h-4 w-4 text-yellow-500" />
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              />
+              <Moon className="h-4 w-4 text-slate-700 dark:text-slate-300" />
+            </div>
           </div>
         </div>
 
@@ -190,69 +238,91 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {dashboardItems.map((item, index) => (
-                <Card key={index} className="overflow-hidden">
-                  <CardContent className={`p-6 ${item.color} dark:text-white`}>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-3xl font-bold">{item.count}</p>
-                        <p className="text-sm opacity-80">{item.label}</p>
+            {statsLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">
+                  {language === 'en' ? 'Loading statistics...' : 'جاري تحميل الإحصائيات...'}
+                </span>
+              </div>
+            ) : statsError ? (
+              <div className="flex flex-col items-center justify-center py-8">
+                <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
+                <p className="text-red-500">{statsError}</p>
+                <Button onClick={handleRefreshStats} variant="outline" size="sm" className="mt-2">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  {language === 'en' ? 'Try Again' : 'حاول مرة أخرى'}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {dashboardItems.map((item, index) => (
+                    <Card key={index} className="overflow-hidden">
+                      <CardContent className={`p-6 ${item.color} dark:text-white`}>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="text-3xl font-bold">{item.count}</p>
+                            <p className="text-sm opacity-80">{item.label}</p>
+                          </div>
+                          <item.icon className="h-8 w-8 opacity-70" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                        <BarChart className="h-5 w-5 text-primary" />
+                        {language === 'en' ? 'Recent Activities' : 'الأنشطة الأخيرة'}
+                      </h3>
+                      <ul className="space-y-3">
+                        {activities.length > 0 ? (
+                          activities.map((activity, i) => (
+                            <li key={activity.id} className="flex justify-between p-2 border-b last:border-0 text-sm">
+                              <span>{getActivityText(activity)}</span>
+                              <span className="text-muted-foreground">
+                                {new Date(activity.created_at).toLocaleDateString()}
+                              </span>
+                            </li>
+                          ))
+                        ) : (
+                          <li className="text-muted-foreground text-sm">
+                            {language === 'en' ? 'No recent activities' : 'لا توجد أنشطة حديثة'}
+                          </li>
+                        )}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-6">
+                      <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
+                        <Settings className="h-5 w-5 text-primary" />
+                        {language === 'en' ? 'Quick Actions' : 'إجراءات سريعة'}
+                      </h3>
+                      <div className="flex flex-col gap-3">
+                        <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('article')}>
+                          <FileText className="mr-2 h-4 w-4" />
+                          {language === 'en' ? 'Create New Article' : 'إنشاء مقال جديد'}
+                        </Button>
+                        <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('video')}>
+                          <Video className="mr-2 h-4 w-4" />
+                          {language === 'en' ? 'Upload New Video' : 'رفع فيديو جديد'}
+                        </Button>
+                        <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('case')}>
+                          <BookOpenText className="mr-2 h-4 w-4" />
+                          {language === 'en' ? 'Add Case Study' : 'إضافة دراسة حالة'}
+                        </Button>
                       </div>
-                      <item.icon className="h-8 w-8 opacity-70" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            
-            <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                    <BarChart className="h-5 w-5 text-primary" />
-                    {language === 'en' ? 'Recent Activities' : 'الأنشطة الأخيرة'}
-                  </h3>
-                  <ul className="space-y-3">
-                    {[
-                      {activity: language === 'en' ? 'New article published' : 'تم نشر مقال جديد', time: '2h ago'},
-                      {activity: language === 'en' ? 'User Ahmed registered' : 'سجّل المستخدم أحمد', time: '4h ago'},
-                      {activity: language === 'en' ? 'New consultation booked' : 'تم حجز استشارة جديدة', time: '6h ago'},
-                      {activity: language === 'en' ? 'Video uploaded' : 'تم رفع فيديو', time: '1d ago'},
-                      {activity: language === 'en' ? 'Case study added' : 'تمت إضافة دراسة حالة', time: '2d ago'}
-                    ].map((item, i) => (
-                      <li key={i} className="flex justify-between p-2 border-b last:border-0 text-sm">
-                        <span>{item.activity}</span>
-                        <span className="text-muted-foreground">{item.time}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
-                    <Settings className="h-5 w-5 text-primary" />
-                    {language === 'en' ? 'Quick Actions' : 'إجراءات سريعة'}
-                  </h3>
-                  <div className="flex flex-col gap-3">
-                    <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('article')}>
-                      <FileText className="mr-2 h-4 w-4" />
-                      {language === 'en' ? 'Create New Article' : 'إنشاء مقال جديد'}
-                    </Button>
-                    <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('video')}>
-                      <Video className="mr-2 h-4 w-4" />
-                      {language === 'en' ? 'Upload New Video' : 'رفع فيديو جديد'}
-                    </Button>
-                    <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('case')}>
-                      <BookOpenText className="mr-2 h-4 w-4" />
-                      {language === 'en' ? 'Add Case Study' : 'إضافة دراسة حالة'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="articles">

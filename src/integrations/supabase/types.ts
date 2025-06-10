@@ -157,6 +157,27 @@ export type Database = {
           },
         ]
       }
+      dashboard_stats: {
+        Row: {
+          id: string
+          last_updated: string
+          stat_type: string
+          value: number
+        }
+        Insert: {
+          id?: string
+          last_updated?: string
+          stat_type: string
+          value?: number
+        }
+        Update: {
+          id?: string
+          last_updated?: string
+          stat_type?: string
+          value?: number
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string | null
@@ -217,6 +238,27 @@ export type Database = {
         }
         Relationships: []
       }
+      recent_activities: {
+        Row: {
+          activity_text_ar: string
+          activity_text_en: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          activity_text_ar: string
+          activity_text_en: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          activity_text_ar?: string
+          activity_text_en?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           author_id: string | null
@@ -272,7 +314,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
