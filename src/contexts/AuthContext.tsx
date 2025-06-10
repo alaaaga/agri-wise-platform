@@ -181,8 +181,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
   
-  // Login function with improved error handling
-  const login = async (email: string, password: string) => {
+  // Login function with improved error handling - Fixed return type
+  const login = async (email: string, password: string): Promise<void> => {
     try {
       console.log('محاولة تسجيل الدخول للمستخدم:', email);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -204,8 +204,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (data.user) {
         await checkAdminRole();
       }
-      
-      return data;
     } catch (error) {
       // Error already handled above
       throw error;
