@@ -1,15 +1,16 @@
 
 import React, { useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Layout from '@/components/Layout';
 import ProfileSettings from '@/components/ProfileSettings';
 import { toast } from '@/components/ui/sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Account = () => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading, isAdmin } = useAuth();
   const { t, language } = useLanguage();
 
   useEffect(() => {
@@ -41,7 +42,17 @@ const Account = () => {
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8">{language === 'en' ? 'My Account' : 'حسابي'}</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">{language === 'en' ? 'My Account' : 'حسابي'}</h1>
+          {isAdmin && (
+            <Link to="/admin">
+              <Button variant="outline" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                {language === 'en' ? 'Admin Dashboard' : 'لوحة تحكم المسؤول'}
+              </Button>
+            </Link>
+          )}
+        </div>
         <ProfileSettings />
       </div>
     </Layout>
