@@ -314,6 +314,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      set_user_as_admin: {
+        Args: { user_email: string }
+        Returns: string
+      }
       update_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: undefined
