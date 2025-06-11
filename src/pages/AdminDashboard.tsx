@@ -25,7 +25,8 @@ import {
   AlertCircle,
   Loader2,
   Database,
-  RefreshCw
+  RefreshCw,
+  Shield
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -57,7 +58,7 @@ const AdminDashboard = () => {
     getActivityText
   } = useDashboardStats();
 
-  // عند تحميل الصفحة، تأكد من تحديث حالة المسؤول
+  // تحقق من دور المسؤول عند تحميل الصفحة
   useEffect(() => {
     const verifyAdminRole = async () => {
       if (!isAuthenticated || !user) {
@@ -106,14 +107,14 @@ const AdminDashboard = () => {
         <div className="flex flex-col justify-center items-center min-h-screen">
           <Loader2 className="animate-spin h-12 w-12 text-primary mb-4" />
           <div className="text-lg font-medium text-gray-700 dark:text-gray-300">
-            {language === 'en' ? 'Loading dashboard...' : 'جاري تحميل لوحة التحكم...'}
+            {language === 'en' ? 'Loading admin dashboard...' : 'جاري تحميل لوحة تحكم المسؤول...'}
           </div>
         </div>
       </Layout>
     );
   }
 
-  // التحقق من أن المستخدم مصرح له
+  // التحقق من المصادقة
   if (!isAuthenticated) {
     toast.error(
       language === 'en'
@@ -123,7 +124,7 @@ const AdminDashboard = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // التحقق من أن المستخدم لديه صلاحيات المسؤول
+  // التحقق من صلاحيات المسؤول
   if (adminCheckCompleted && !isAdmin) {
     toast.error(
       language === 'en'
@@ -168,9 +169,9 @@ const AdminDashboard = () => {
 
   const handleQuickAction = (action: string) => {
     const actionMessages: Record<string, string> = {
-      article: language === 'en' ? 'Creating new article...' : 'جاري إنشاء مقال جديد...',
-      video: language === 'en' ? 'Uploading new video...' : 'جاري رفع فيديو جديد...',
-      case: language === 'en' ? 'Adding case study...' : 'جاري إضافة دراسة حالة...'
+      article: language === 'en' ? 'Switching to articles management...' : 'جاري التبديل إلى إدارة المقالات...',
+      video: language === 'en' ? 'Switching to videos management...' : 'جاري التبديل إلى إدارة الفيديوهات...',
+      case: language === 'en' ? 'Switching to case studies management...' : 'جاري التبديل إلى إدارة دراسات الحالة...'
     };
     
     toast.success(actionMessages[action]);
@@ -187,9 +188,12 @@ const AdminDashboard = () => {
     <Layout>
       <div className="py-6 px-4 sm:px-6 lg:px-8 min-h-screen">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">
-            {language === 'en' ? 'Admin Dashboard' : 'لوحة تحكم المسؤول'}
-          </h1>
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-semibold">
+              {language === 'en' ? 'Admin Dashboard' : 'لوحة تحكم المسؤول'}
+            </h1>
+          </div>
           <div className="flex items-center gap-4">
             <Button onClick={handleRefreshStats} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -246,20 +250,11 @@ const AdminDashboard = () => {
                   {language === 'en' ? 'Loading statistics...' : 'جاري تحميل الإحصائيات...'}
                 </span>
               </div>
-            ) : statsError ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
-                <p className="text-red-500">{statsError}</p>
-                <Button onClick={handleRefreshStats} variant="outline" size="sm" className="mt-2">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  {language === 'en' ? 'Try Again' : 'حاول مرة أخرى'}
-                </Button>
-              </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
                   {dashboardItems.map((item, index) => (
-                    <Card key={index} className="overflow-hidden">
+                    <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
                       <CardContent className={`p-6 ${item.color} dark:text-white`}>
                         <div className="flex justify-between items-center">
                           <div>
@@ -273,29 +268,29 @@ const AdminDashboard = () => {
                   ))}
                 </div>
                 
-                <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card>
                     <CardContent className="p-6">
                       <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
                         <BarChart className="h-5 w-5 text-primary" />
                         {language === 'en' ? 'Recent Activities' : 'الأنشطة الأخيرة'}
                       </h3>
-                      <ul className="space-y-3">
+                      <div className="space-y-3">
                         {activities.length > 0 ? (
-                          activities.map((activity, i) => (
-                            <li key={activity.id} className="flex justify-between p-2 border-b last:border-0 text-sm">
-                              <span>{getActivityText(activity)}</span>
-                              <span className="text-muted-foreground">
-                                {new Date(activity.created_at).toLocaleDateString()}
+                          activities.map((activity) => (
+                            <div key={activity.id} className="flex justify-between items-start p-3 border-b last:border-0 text-sm rounded hover:bg-muted/50 transition-colors">
+                              <span className="flex-1">{getActivityText(activity)}</span>
+                              <span className="text-muted-foreground text-xs whitespace-nowrap ml-2">
+                                {new Date(activity.created_at).toLocaleDateString('ar-EG')}
                               </span>
-                            </li>
+                            </div>
                           ))
                         ) : (
-                          <li className="text-muted-foreground text-sm">
+                          <div className="text-muted-foreground text-sm text-center py-4">
                             {language === 'en' ? 'No recent activities' : 'لا توجد أنشطة حديثة'}
-                          </li>
+                          </div>
                         )}
-                      </ul>
+                      </div>
                     </CardContent>
                   </Card>
                   
@@ -308,15 +303,15 @@ const AdminDashboard = () => {
                       <div className="flex flex-col gap-3">
                         <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('article')}>
                           <FileText className="mr-2 h-4 w-4" />
-                          {language === 'en' ? 'Create New Article' : 'إنشاء مقال جديد'}
+                          {language === 'en' ? 'Manage Articles' : 'إدارة المقالات'}
                         </Button>
                         <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('video')}>
                           <Video className="mr-2 h-4 w-4" />
-                          {language === 'en' ? 'Upload New Video' : 'رفع فيديو جديد'}
+                          {language === 'en' ? 'Manage Videos' : 'إدارة الفيديوهات'}
                         </Button>
                         <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('case')}>
                           <BookOpenText className="mr-2 h-4 w-4" />
-                          {language === 'en' ? 'Add Case Study' : 'إضافة دراسة حالة'}
+                          {language === 'en' ? 'Manage Case Studies' : 'إدارة دراسات الحالة'}
                         </Button>
                       </div>
                     </CardContent>
