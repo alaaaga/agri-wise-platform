@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import UserBookingsPanel from '@/components/UserBookingsPanel';
 
 const Account = () => {
   const { isAuthenticated, user, isLoading, isAdmin, checkAdminRole } = useAuth();
@@ -27,7 +28,6 @@ const Account = () => {
   useEffect(() => {
     if (user) {
       fetchProfile();
-      // إعادة فحص صلاحيات المسؤول
       checkAdminRole();
     }
   }, [user]);
@@ -93,30 +93,27 @@ const Account = () => {
     if (!user) return;
     
     try {
-      // تحديث الحساب ليصبح مسؤول
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          role: 'admin',
-          permissions: {
-            can_create_articles: true,
-            can_edit_articles: true,
-            can_delete_articles: true,
-            can_manage_users: true
-          },
-          updated_at: new Date().toISOString()
-        });
+      console.log('Making user admin:', user.id);
+      
+      // استخدام دالة SQL المخصصة
+      const { data, error } = await supabase.rpc('set_user_as_admin', {
+        user_email: user.email
+      });
 
       if (error) {
         console.error('Error making admin:', error);
+        toast.error('خطأ في تحديث الحساب: ' + error.message);
       } else {
-        toast.success('تم تحديث الحساب إلى مسؤول!');
+        console.log('Admin update result:', data);
+        toast.success('تم تحديث الحساب إلى مسؤول بنجاح!');
         // إعادة فحص صلاحيات المسؤول
-        await checkAdminRole();
+        setTimeout(() => {
+          checkAdminRole();
+        }, 1000);
       }
     } catch (error) {
       console.error('Error making admin:', error);
+      toast.error('خطأ غير متوقع في تحديث الحساب');
     }
   };
 
@@ -139,7 +136,7 @@ const Account = () => {
 
   return (
     <Layout>
-      <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <div className="container mx-auto py-8 px-4 max-w-6xl">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <User className="h-8 w-8 text-primary" />
@@ -281,6 +278,13 @@ const Account = () => {
             </Card>
           </div>
         </div>
+
+        {/* قسم الحجوزات للمستخدمين العاديين */}
+        {!isAdmin && (
+          <div className="mt-8">
+            <UserBookingsPanel />
+          </div>
+        )}
       </div>
     </Layout>
   );

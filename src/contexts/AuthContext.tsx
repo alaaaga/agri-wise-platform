@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
     
     try {
-      console.log('جاري التحقق من دور المسؤول للمستخدم:', user.id);
+      console.log('جاري التحقق من دور المسؤول للمستخدم:', user.email);
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('role')
@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       const hasAdminRole = profile?.role === 'admin';
-      console.log('نتيجة التحقق من دور المسؤول:', hasAdminRole, 'للمستخدم:', user.id);
+      console.log('نتيجة التحقق من دور المسؤول:', hasAdminRole, 'للمستخدم:', user.email);
       setIsAdmin(hasAdminRole);
       return hasAdminRole;
     } catch (error) {
@@ -99,13 +99,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN') {
-          console.log('تم تسجيل دخول المستخدم:', currentSession?.user?.id);
+          console.log('تم تسجيل دخول المستخدم:', currentSession?.user?.email);
           toast.success('تم تسجيل الدخول بنجاح');
           
           // Defer the admin check to avoid race conditions
           setTimeout(async () => {
             await checkAdminRole();
-          }, 100);
+          }, 500);
         } 
         else if (event === 'SIGNED_OUT') {
           console.log('تم تسجيل خروج المستخدم');
@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
         
-        console.log('التحقق من الجلسة الحالية:', currentSession?.user?.id || 'لا توجد جلسة');
+        console.log('التحقق من الجلسة الحالية:', currentSession?.user?.email || 'لا توجد جلسة');
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Defer admin check to avoid race conditions
           setTimeout(async () => {
             await checkAdminRole();
-          }, 100);
+          }, 500);
         }
       } catch (error) {
         console.error('خطأ غير متوقع أثناء التحقق من الجلسة:', error);
@@ -170,7 +170,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       if (data.session) {
-        console.log('تم تحديث الجلسة بنجاح للمستخدم:', data.session.user.id);
+        console.log('تم تحديث الجلسة بنجاح للمستخدم:', data.session.user.email);
         setSession(data.session);
         setUser(data.session.user);
         await checkAdminRole();
@@ -201,7 +201,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Update admin role after login
       if (data.user) {
-        await checkAdminRole();
+        setTimeout(() => {
+          checkAdminRole();
+        }, 500);
       }
     } catch (error) {
       // Error already handled above
@@ -317,3 +319,5 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     </AuthContext.Provider>
   );
 };
+
+export default AuthContext;
