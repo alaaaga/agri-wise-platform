@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarCheck, Clock, User, FileText, Plus, Loader2 } from 'lucide-react';
+import { CalendarCheck, Clock, User, FileText, Plus, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 
 interface Booking {
@@ -24,50 +24,7 @@ const UserBookingsPanel = () => {
   const { language } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // بيانات وهمية للحجوزات
-  const mockBookings: Booking[] = [
-    {
-      id: '1',
-      service: 'استشارة زراعية',
-      booking_date: '2025-06-15',
-      booking_time: '10:00:00',
-      status: 'pending',
-      notes: 'استشارة حول زراعة الطماطم',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      service: 'تحليل التربة',
-      booking_date: '2025-06-18',
-      booking_time: '14:30:00',
-      status: 'confirmed',
-      notes: 'تحليل شامل للتربة',
-      created_at: new Date(Date.now() - 86400000).toISOString()
-    },
-    {
-      id: '3',
-      service: 'استشارة الري',
-      booking_date: '2025-06-12',
-      booking_time: '09:00:00',
-      status: 'completed',
-      notes: 'تطوير نظام الري بالتنقيط',
-      created_at: new Date(Date.now() - 172800000).toISOString()
-    },
-    {
-      id: '4',
-      service: 'مكافحة الآفات',
-      booking_date: '2025-06-10',
-      booking_time: '11:30:00',
-      status: 'cancelled',
-      notes: 'تم الإلغاء بسبب الطقس',
-      created_at: new Date(Date.now() - 259200000).toISOString()
-    }
-  ];
-
-  useEffect(() => {
-    fetchBookings();
-  }, [user]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchBookings = async () => {
     if (!user) return;
@@ -75,7 +32,6 @@ const UserBookingsPanel = () => {
     try {
       setLoading(true);
       
-      // محاولة جلب البيانات من قاعدة البيانات
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
@@ -84,21 +40,29 @@ const UserBookingsPanel = () => {
 
       if (error) {
         console.error('Error fetching bookings:', error);
-        // استخدام البيانات الوهمية في حالة الخطأ
-        setBookings(mockBookings);
-      } else if (data && data.length > 0) {
-        setBookings(data);
-      } else {
-        // استخدام البيانات الوهمية إذا لم توجد بيانات
-        setBookings(mockBookings);
+        toast.error(language === 'en' ? 'Error loading bookings' : 'خطأ في تحميل الحجوزات');
+        return;
       }
+
+      setBookings(data || []);
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      setBookings(mockBookings);
+      toast.error(language === 'en' ? 'Error loading bookings' : 'خطأ في تحميل الحجوزات');
     } finally {
       setLoading(false);
     }
   };
+
+  const refreshBookings = async () => {
+    setRefreshing(true);
+    await fetchBookings();
+    setRefreshing(false);
+    toast.success(language === 'en' ? 'Bookings refreshed' : 'تم تحديث الحجوزات');
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, [user]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -166,10 +130,21 @@ const UserBookingsPanel = () => {
             <CalendarCheck className="h-5 w-5" />
             {language === 'en' ? 'My Bookings' : 'حجوزاتي'}
           </CardTitle>
-          <Button variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            {language === 'en' ? 'New Booking' : 'حجز جديد'}
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={refreshBookings}
+              disabled={refreshing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              {language === 'en' ? 'Refresh' : 'تحديث'}
+            </Button>
+            <Button variant="outline" size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {language === 'en' ? 'New Booking' : 'حجز جديد'}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
