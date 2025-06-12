@@ -64,7 +64,7 @@ const ProfilePictureUpload = ({ currentImageUrl, onImageUpdate }: ProfilePicture
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ 
-          profile_picture_url: data.publicUrl,
+          avatar_url: data.publicUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +22,7 @@ const Account = () => {
     first_name: '',
     last_name: '',
     bio: '',
-    profile_picture_url: ''
+    avatar_url: ''
   });
 
   useEffect(() => {
@@ -56,7 +55,7 @@ const Account = () => {
           first_name: data.first_name || '',
           last_name: data.last_name || '',
           bio: data.bio || '',
-          profile_picture_url: data.profile_picture_url || ''
+          avatar_url: data.avatar_url || ''
         });
         console.log('تم جلب الملف الشخصي بنجاح:', data);
       }
@@ -107,7 +106,7 @@ const Account = () => {
           first_name: profile.first_name,
           last_name: profile.last_name,
           bio: profile.bio,
-          profile_picture_url: profile.profile_picture_url,
+          avatar_url: profile.avatar_url,
           updated_at: new Date().toISOString()
         });
 
@@ -153,7 +152,7 @@ const Account = () => {
   };
 
   const handleImageUpdate = (url: string) => {
-    setProfile(prev => ({ ...prev, profile_picture_url: url }));
+    setProfile(prev => ({ ...prev, avatar_url: url }));
   };
 
   if (isLoading) {
@@ -308,7 +307,7 @@ const Account = () => {
               </CardHeader>
               <CardContent>
                 <ProfilePictureUpload 
-                  currentImageUrl={profile.profile_picture_url}
+                  currentImageUrl={profile.avatar_url}
                   onImageUpdate={handleImageUpdate}
                 />
               </CardContent>
