@@ -20,7 +20,7 @@ interface Booking {
 }
 
 const UserBookingsPanel = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { language } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,11 +31,12 @@ const UserBookingsPanel = () => {
 
     try {
       setLoading(true);
+      console.log('جاري جلب الحجوزات للمستخدم:', user.id);
       
+      // استعلام الحجوزات باستخدام السياسات الجديدة
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
-        .eq('client_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -44,6 +45,7 @@ const UserBookingsPanel = () => {
         return;
       }
 
+      console.log('تم جلب الحجوزات بنجاح:', data);
       setBookings(data || []);
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -58,6 +60,27 @@ const UserBookingsPanel = () => {
     await fetchBookings();
     setRefreshing(false);
     toast.success(language === 'en' ? 'Bookings refreshed' : 'تم تحديث الحجوزات');
+  };
+
+  const cancelBooking = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', bookingId);
+
+      if (error) {
+        console.error('Error cancelling booking:', error);
+        toast.error(language === 'en' ? 'Error cancelling booking' : 'خطأ في إلغاء الحجز');
+        return;
+      }
+
+      await fetchBookings();
+      toast.success(language === 'en' ? 'Booking cancelled successfully' : 'تم إلغاء الحجز بنجاح');
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      toast.error(language === 'en' ? 'Error cancelling booking' : 'خطأ في إلغاء الحجز');
+    }
   };
 
   useEffect(() => {
@@ -94,7 +117,7 @@ const UserBookingsPanel = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ar-EG');
+    return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : 'ar-EG');
   };
 
   const formatTime = (timeString: string) => {
@@ -128,7 +151,10 @@ const UserBookingsPanel = () => {
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2">
             <CalendarCheck className="h-5 w-5" />
-            {language === 'en' ? 'My Bookings' : 'حجوزاتي'}
+            {isAdmin 
+              ? (language === 'en' ? 'All Bookings' : 'جميع الحجوزات')
+              : (language === 'en' ? 'My Bookings' : 'حجوزاتي')
+            }
           </CardTitle>
           <div className="flex gap-2">
             <Button 
@@ -180,19 +206,23 @@ const UserBookingsPanel = () => {
                 </div>
                 
                 {booking.notes && (
-                  <div className="flex items-start gap-2 text-sm">
+                  <div className="flex items-start gap-2 text-sm mb-3">
                     <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <p className="text-muted-foreground">{booking.notes}</p>
                   </div>
                 )}
                 
-                <div className="flex justify-between items-center mt-3 pt-3 border-t">
+                <div className="flex justify-between items-center pt-3 border-t">
                   <span className="text-sm text-muted-foreground">
                     {language === 'en' ? 'Booked on' : 'تم الحجز في'}: {formatDate(booking.created_at)}
                   </span>
                   <div className="flex gap-2">
                     {booking.status === 'pending' && (
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => cancelBooking(booking.id)}
+                      >
                         {language === 'en' ? 'Cancel' : 'إلغاء'}
                       </Button>
                     )}

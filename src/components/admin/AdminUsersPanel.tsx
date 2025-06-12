@@ -11,12 +11,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Search, Settings, Loader2 } from 'lucide-react';
+import { UserPlus, Search, Settings, Loader2, Shield } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
-// Define the User type according to our database structure
 interface User {
   id: string;
   email?: string;
@@ -27,15 +26,12 @@ interface User {
   avatar_url?: string;
 }
 
-// Define type for Supabase auth user data
 interface AuthUser {
   id: string;
   email?: string;
   banned?: boolean;
-  // Add other properties as needed
 }
 
-// Define type for Supabase auth response
 interface AuthUsersResponse {
   users?: AuthUser[];
 }
@@ -51,25 +47,56 @@ const AdminUsersPanel = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
+        console.log('جاري جلب المستخدمين...');
         
-        // Fetch users from Supabase
+        // جلب المستخدمين من جدول profiles
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, last_name, role, avatar_url');
+          .select('id, first_name, last_name, role, avatar_url');
         
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          console.error('خطأ في جلب الملفات الشخصية:', profilesError);
+          throw profilesError;
+        }
         
-        // Get users authentication data to get emails
-        const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers() as { 
-          data: AuthUsersResponse, 
-          error: Error | null 
-        };
+        console.log('تم جلب الملفات الشخصية:', profiles);
         
-        if (authError) {
-          console.error('Error fetching auth users:', authError);
-          // Continue with profiles only if auth fails
+        // محاولة جلب بيانات المصادقة
+        try {
+          const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers() as { 
+            data: AuthUsersResponse, 
+            error: Error | null 
+          };
+          
+          if (authError) {
+            console.error('تحذير: لا يمكن جلب بيانات المصادقة:', authError);
+          }
+          
+          // دمج البيانات
+          const transformedData = profiles.map(profile => {
+            const authUser = authUsers?.users?.find(user => user.id === profile.id);
+            return {
+              id: profile.id,
+              email: authUser?.email || 'غير متاح',
+              first_name: profile.first_name || '',
+              last_name: profile.last_name || '',
+              role: profile.role || 'user',
+              status: authUser?.banned ? 'inactive' as const : 'active' as const,
+              avatar_url: profile.avatar_url
+            };
+          });
+          
+          setUsers(transformedData);
+          console.log('تم دمج بيانات المستخدمين بنجاح:', transformedData);
+          
+        } catch (authError) {
+          console.error('خطأ في جلب بيانات المصادقة، سيتم استخدام الملفات الشخصية فقط:', authError);
+          
+          // استخدام الملفات الشخصية فقط
           const transformedData = profiles.map(profile => ({
             id: profile.id,
+            email: 'غير متاح',
+            first_name: profile.first_name || '',
             last_name: profile.last_name || '',
             role: profile.role || 'user',
             status: 'active' as const,
@@ -77,40 +104,12 @@ const AdminUsersPanel = () => {
           }));
           
           setUsers(transformedData);
-          return;
         }
         
-        // Combine profile and auth data
-        const transformedData = profiles.map(profile => {
-          const authUser = authUsers.users?.find(user => user.id === profile.id);
-          return {
-            id: profile.id,
-            email: authUser?.email || '',
-            // If first_name doesn't exist in profiles, use empty string
-            first_name: '',
-            last_name: profile.last_name || '',
-            role: profile.role || 'user',
-            status: authUser?.banned ? 'inactive' as const : 'active' as const,
-            avatar_url: profile.avatar_url
-          };
-        });
-        
-        setUsers(transformedData);
       } catch (err) {
-        console.error('Error fetching users:', err);
+        console.error('خطأ في جلب المستخدمين:', err);
         setError(err instanceof Error ? err.message : 'فشل في جلب المستخدمين');
         toast.error(language === 'en' ? 'Failed to fetch users' : 'فشل في جلب المستخدمين');
-        
-        // Set fallback mock data if the fetch fails
-        const mockUsers = [
-          { id: '1', first_name: 'Ahmed', last_name: 'Mohamed', email: 'ahmed@example.com', role: 'user', status: 'active' as const },
-          { id: '2', first_name: 'Fatima', last_name: 'Ali', email: 'fatima@example.com', role: 'user', status: 'active' as const },
-          { id: '3', first_name: 'Mohammed', last_name: 'Ibrahim', email: 'mohammed@example.com', role: 'admin', status: 'active' as const },
-          { id: '4', first_name: 'Sara', last_name: 'Ahmed', email: 'sara@example.com', role: 'user', status: 'inactive' as const },
-          { id: '5', first_name: 'Khalid', last_name: 'Omar', email: 'khalid@example.com', role: 'user', status: 'active' as const },
-        ];
-        
-        setUsers(mockUsers);
       } finally {
         setLoading(false);
       }
@@ -119,7 +118,6 @@ const AdminUsersPanel = () => {
     fetchUsers();
   }, [language]);
   
-  // Filter users based on search query
   const filteredUsers = users.filter(user => 
     (user.first_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
     (user.last_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -134,12 +132,34 @@ const AdminUsersPanel = () => {
     );
   };
 
-  const handleUserSettings = (userId: string) => {
-    toast.info(
-      language === 'en' 
-        ? `Managing user ID: ${userId}` 
-        : `إدارة المستخدم ذو المعرف: ${userId}`
-    );
+  const makeUserAdmin = async (userId: string, userEmail: string) => {
+    try {
+      console.log('جاري تحديث المستخدم إلى مسؤول:', userId);
+      
+      const { data, error } = await supabase.rpc('set_user_as_admin', {
+        user_email: userEmail
+      });
+
+      if (error) {
+        console.error('خطأ في تحديث المستخدم:', error);
+        toast.error('خطأ في تحديث المستخدم: ' + error.message);
+        return;
+      }
+
+      console.log('نتيجة تحديث المستخدم:', data);
+      toast.success('تم تحديث المستخدم إلى مسؤول بنجاح!');
+      
+      // تحديث البيانات المحلية
+      setUsers(users.map(user => 
+        user.id === userId 
+          ? { ...user, role: 'admin' }
+          : user
+      ));
+      
+    } catch (error) {
+      console.error('خطأ غير متوقع في تحديث المستخدم:', error);
+      toast.error('خطأ غير متوقع في تحديث المستخدم');
+    }
   };
 
   return (
@@ -201,11 +221,12 @@ const AdminUsersPanel = () => {
                       <TableCell className="font-medium">{user.first_name} {user.last_name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded text-xs ${
+                        <span className={`px-2 py-1 rounded text-xs flex items-center gap-1 w-fit ${
                           user.role === 'admin' 
                             ? 'bg-primary/20 text-primary' 
                             : 'bg-secondary/20 text-secondary-foreground'
                         }`}>
+                          {user.role === 'admin' && <Shield className="h-3 w-3" />}
                           {user.role}
                         </span>
                       </TableCell>
@@ -219,13 +240,24 @@ const AdminUsersPanel = () => {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleUserSettings(user.id)}
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
+                        <div className="flex gap-2 justify-end">
+                          {user.role !== 'admin' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => makeUserAdmin(user.id, user.email || '')}
+                            >
+                              <Shield className="h-4 w-4 mr-1" />
+                              {language === 'en' ? 'Make Admin' : 'جعل مسؤول'}
+                            </Button>
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
