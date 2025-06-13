@@ -77,28 +77,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('التحقق من دور المسؤول...');
       
-      // استخدام الدالة الجديدة من قاعدة البيانات
-      const { data, error } = await supabase.rpc('is_admin');
-      
+      // التحقق من جدول profiles مباشرة
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session?.user?.id || user?.id)
+        .single();
+        
       if (error) {
         console.error('خطأ في التحقق من دور المسؤول:', error);
-        // fallback: التحقق من جدول profiles مباشرة
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session?.user?.id || user?.id)
-          .single();
-          
-        if (!profileError && profile?.role === 'admin') {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
+        setIsAdmin(false);
       } else {
-        setIsAdmin(Boolean(data));
+        setIsAdmin(profile?.role === 'admin');
       }
       
-      console.log('نتيجة فحص المسؤول:', data);
+      console.log('نتيجة فحص المسؤول:', profile?.role === 'admin');
     } catch (error) {
       console.error('خطأ غير متوقع في فحص دور المسؤول:', error);
       setIsAdmin(false);
