@@ -12,10 +12,13 @@ interface AuthContextType {
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, userData?: any) => Promise<void>;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   checkAdminRole: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  getUserDisplayName: () => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -92,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setIsAdmin(false);
         }
       } else {
-        setIsAdmin(data || false);
+        setIsAdmin(Boolean(data));
       }
       
       console.log('نتيجة فحص المسؤول:', data);
@@ -148,6 +151,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const register = async (email: string, password: string, firstName: string, lastName: string) => {
+    const userData = {
+      first_name: firstName,
+      last_name: lastName,
+      role: 'user'
+    };
+    
+    return await signup(email, password, userData);
+  };
+
   const logout = async () => {
     setIsLoading(true);
     try {
@@ -176,6 +189,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    return await resetPassword(email);
+  };
+
   const refreshSession = async () => {
     try {
       const { data, error } = await supabase.auth.refreshSession();
@@ -191,6 +208,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const getUserDisplayName = () => {
+    if (!user) return 'مستخدم';
+    
+    const firstName = user.user_metadata?.first_name || '';
+    const lastName = user.user_metadata?.last_name || '';
+    
+    if (firstName || lastName) {
+      return `${firstName} ${lastName}`.trim();
+    }
+    
+    return user.email?.split('@')[0] || 'مستخدم';
+  };
+
   const value = {
     user,
     session,
@@ -199,10 +229,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAdmin,
     login,
     signup,
+    register,
     logout,
     resetPassword,
+    forgotPassword,
     checkAdminRole,
     refreshSession,
+    getUserDisplayName,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
