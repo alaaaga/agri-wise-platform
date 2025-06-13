@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +15,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
-  checkAdminRole: () => Promise<void>;
+  checkAdminRole: () => Promise<boolean>;
   refreshSession: () => Promise<void>;
   getUserDisplayName: () => string;
 }
@@ -71,30 +70,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAdminRole = async () => {
+  const checkAdminRole = async (): Promise<boolean> => {
     try {
-      if (!user && !session?.user) return;
+      if (!user && !session?.user) return false;
       
       console.log('التحقق من دور المسؤول...');
       
-      // التحقق من جدول profiles مباشرة
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session?.user?.id || user?.id)
-        .single();
-        
+      // استخدام الدالة الجديدة is_admin
+      const { data, error } = await supabase.rpc('is_admin');
+      
       if (error) {
         console.error('خطأ في التحقق من دور المسؤول:', error);
         setIsAdmin(false);
+        return false;
       } else {
-        setIsAdmin(profile?.role === 'admin');
+        const adminStatus = Boolean(data);
+        setIsAdmin(adminStatus);
+        console.log('نتيجة فحص المسؤول:', adminStatus);
+        return adminStatus;
       }
-      
-      console.log('نتيجة فحص المسؤول:', profile?.role === 'admin');
     } catch (error) {
       console.error('خطأ غير متوقع في فحص دور المسؤول:', error);
       setIsAdmin(false);
+      return false;
     }
   };
 

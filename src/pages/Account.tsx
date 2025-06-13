@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -131,8 +132,8 @@ const Account = () => {
     try {
       console.log('جاري جعل المستخدم مسؤول:', user.id);
       
-      const { data, error } = await supabase.rpc('set_user_as_admin', {
-        user_email: user.email
+      const { data, error } = await supabase.rpc('make_user_admin', {
+        target_user_id: user.id
       });
 
       if (error) {
@@ -140,7 +141,7 @@ const Account = () => {
         toast.error('خطأ في تحديث الحساب: ' + error.message);
       } else {
         console.log('نتيجة تحديث المسؤول:', data);
-        toast.success('تم تحديث الحساب إلى مسؤول بنجاح!');
+        toast.success(data || 'تم تحديث الحساب إلى مسؤول بنجاح!');
         setTimeout(() => {
           checkAdminRole();
         }, 1000);

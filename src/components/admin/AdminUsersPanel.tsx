@@ -132,12 +132,12 @@ const AdminUsersPanel = () => {
     );
   };
 
-  const makeUserAdmin = async (userId: string, userEmail: string) => {
+  const makeUserAdmin = async (userId: string) => {
     try {
       console.log('جاري تحديث المستخدم إلى مسؤول:', userId);
       
-      const { data, error } = await supabase.rpc('set_user_as_admin', {
-        user_email: userEmail
+      const { data, error } = await supabase.rpc('make_user_admin', {
+        target_user_id: userId
       });
 
       if (error) {
@@ -147,7 +147,7 @@ const AdminUsersPanel = () => {
       }
 
       console.log('نتيجة تحديث المستخدم:', data);
-      toast.success('تم تحديث المستخدم إلى مسؤول بنجاح!');
+      toast.success(data || 'تم تحديث المستخدم إلى مسؤول بنجاح!');
       
       // تحديث البيانات المحلية
       setUsers(users.map(user => 
@@ -245,7 +245,7 @@ const AdminUsersPanel = () => {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={() => makeUserAdmin(user.id, user.email || '')}
+                              onClick={() => makeUserAdmin(user.id)}
                             >
                               <Shield className="h-4 w-4 mr-1" />
                               {language === 'en' ? 'Make Admin' : 'جعل مسؤول'}
