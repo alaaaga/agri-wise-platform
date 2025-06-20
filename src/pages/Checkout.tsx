@@ -34,10 +34,20 @@ const Checkout = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || cartItems.length === 0) return;
+    if (!user || cartItems.length === 0) {
+      toast.error(language === 'en' ? 'Please login and add items to cart' : 'يرجى تسجيل الدخول وإضافة عناصر للسلة');
+      return;
+    }
+
+    if (!formData.shipping_address || !formData.phone) {
+      toast.error(language === 'en' ? 'Please fill all required fields' : 'يرجى ملء جميع الحقول المطلوبة');
+      return;
+    }
 
     setLoading(true);
     try {
+      console.log('بدء إنشاء الطلب...', { user: user.id, cartItems, total: getCartTotal() });
+
       // Create order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -52,7 +62,12 @@ const Checkout = () => {
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('خطأ في إنشاء الطلب:', orderError);
+        throw orderError;
+      }
+
+      console.log('تم إنشاء الطلب بنجاح:', order);
 
       // Create order items
       const orderItems = cartItems.map(item => ({
@@ -62,11 +77,18 @@ const Checkout = () => {
         price: item.product.price
       }));
 
+      console.log('إنشاء عناصر الطلب:', orderItems);
+
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(orderItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('خطأ في إنشاء عناصر الطلب:', itemsError);
+        throw itemsError;
+      }
+
+      console.log('تم إنشاء عناصر الطلب بنجاح');
 
       // Clear cart
       await clearCart();
@@ -74,8 +96,8 @@ const Checkout = () => {
       toast.success(language === 'en' ? 'Order placed successfully!' : 'تم إرسال الطلب بنجاح!');
       navigate('/orders');
     } catch (error) {
-      console.error('Error placing order:', error);
-      toast.error(language === 'en' ? 'Failed to place order' : 'فشل في إرسال الطلب');
+      console.error('خطأ في إرسال الطلب:', error);
+      toast.error(language === 'en' ? 'Failed to place order. Please try again.' : 'فشل في إرسال الطلب. يرجى المحاولة مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -105,7 +127,7 @@ const Checkout = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="shipping_address">
-                    {language === 'en' ? 'Shipping Address' : 'عنوان الشحن'}
+                    {language === 'en' ? 'Shipping Address *' : 'عنوان الشحن *'}
                   </Label>
                   <Textarea
                     id="shipping_address"
@@ -117,11 +139,12 @@ const Checkout = () => {
                       ? 'Enter your full address' 
                       : 'أدخل عنوانك الكامل'
                     }
+                    className="min-h-[100px]"
                   />
                 </div>
                 <div>
                   <Label htmlFor="phone">
-                    {language === 'en' ? 'Phone Number' : 'رقم الهاتف'}
+                    {language === 'en' ? 'Phone Number *' : 'رقم الهاتف *'}
                   </Label>
                   <Input
                     id="phone"
@@ -164,13 +187,16 @@ const Checkout = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {cartItems.map((item) => (
-                <div key={item.id} className="flex justify-between items-center">
-                  <div>
+                <div key={item.id} className="flex justify-between items-center border-b pb-2">
+                  <div className="flex-1">
                     <p className="font-medium">
                       {language === 'en' ? item.product.name : item.product.name_ar}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       {language === 'en' ? 'Quantity:' : 'الكمية:'} {item.quantity}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {language === 'en' ? 'Unit price:' : 'سعر الوحدة:'} {item.product.price.toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
                     </p>
                   </div>
                   <p className="font-semibold">
@@ -185,12 +211,12 @@ const Checkout = () => {
               </div>
               <Button 
                 onClick={handleSubmit}
-                disabled={loading}
+                disabled={loading || !formData.shipping_address || !formData.phone}
                 className="w-full"
               >
                 {loading 
                   ? (language === 'en' ? 'Processing...' : 'جاري المعالجة...')
-                  : (language === 'en' ? 'Place Order' : 'إرسال الطلب')
+                  : (language === 'en' ? 'Place Order' : 'إتمام الطلب')
                 }
               </Button>
             </CardContent>
