@@ -29,9 +29,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
-
-// ... keep existing code (imports and queryClient)
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
@@ -60,10 +57,6 @@ const App = () => (
                 <Route path="/content/case-studies" element={<CaseStudies />} />
                 <Route path="/content/ask-us" element={<AskUs />} />
                 <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/marketplace" element={<Marketplace />} />
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/orders" element={<Orders />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
