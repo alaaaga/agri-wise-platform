@@ -26,6 +26,10 @@ import Videos from "./pages/Videos";
 import CaseStudies from "./pages/CaseStudies";
 import AskUs from "./pages/AskUs";
 import AdminDashboard from "./pages/AdminDashboard";
+import Marketplace from "./pages/Marketplace";
+import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import Orders from "./pages/Orders";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +49,10 @@ const App = () => (
                 <Route path="/services/crop-care" element={<CropCareService />} />
                 <Route path="/services/soil-analysis" element={<SoilAnalysisService />} />
                 <Route path="/services/agri-tech" element={<AgriTechService />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/orders" element={<Orders />} />
                 <Route path="/book" element={<BookConsultation />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/login" element={<Login />} />

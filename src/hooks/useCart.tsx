@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -66,11 +67,9 @@ export const useCart = () => {
     }
 
     try {
-      // Check if item already exists in cart
       const existingItem = cartItems.find(item => item.product_id === productId);
       
       if (existingItem) {
-        // Update existing item
         const { error } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + quantity })
@@ -78,7 +77,6 @@ export const useCart = () => {
 
         if (error) throw error;
       } else {
-        // Add new item
         const { error } = await supabase
           .from('cart_items')
           .insert({

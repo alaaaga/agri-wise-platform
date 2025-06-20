@@ -15,36 +15,48 @@ export type Database = {
           category: string
           content: string
           created_at: string | null
+          excerpt: string | null
           id: string
           image_url: string | null
+          likes: number | null
           published_at: string | null
-          status: string | null
+          status: Database["public"]["Enums"]["content_status"] | null
+          tags: string[] | null
           title: string
           updated_at: string | null
+          views: number | null
         }
         Insert: {
           author_id?: string | null
           category: string
           content: string
           created_at?: string | null
+          excerpt?: string | null
           id?: string
           image_url?: string | null
+          likes?: number | null
           published_at?: string | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          tags?: string[] | null
           title: string
           updated_at?: string | null
+          views?: number | null
         }
         Update: {
           author_id?: string | null
           category?: string
           content?: string
           created_at?: string | null
+          excerpt?: string | null
           id?: string
           image_url?: string | null
+          likes?: number | null
           published_at?: string | null
-          status?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          tags?: string[] | null
           title?: string
           updated_at?: string | null
+          views?: number | null
         }
         Relationships: [
           {
@@ -60,37 +72,49 @@ export type Database = {
         Row: {
           booking_date: string
           booking_time: string
-          client_id: string
-          consultant_id: string
+          client_id: string | null
+          consultant_id: string | null
           created_at: string | null
+          description: string | null
+          duration: number | null
           id: string
           notes: string | null
-          service: string
-          status: string | null
+          price: number | null
+          service_type: string
+          status: Database["public"]["Enums"]["booking_status"] | null
+          title: string
           updated_at: string | null
         }
         Insert: {
           booking_date: string
           booking_time: string
-          client_id: string
-          consultant_id: string
+          client_id?: string | null
+          consultant_id?: string | null
           created_at?: string | null
+          description?: string | null
+          duration?: number | null
           id?: string
           notes?: string | null
-          service: string
-          status?: string | null
+          price?: number | null
+          service_type: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          title: string
           updated_at?: string | null
         }
         Update: {
           booking_date?: string
           booking_time?: string
-          client_id?: string
-          consultant_id?: string
+          client_id?: string | null
+          consultant_id?: string | null
           created_at?: string | null
+          description?: string | null
+          duration?: number | null
           id?: string
           notes?: string | null
-          service?: string
-          status?: string | null
+          price?: number | null
+          service_type?: string
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          title?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -110,6 +134,45 @@ export type Database = {
           },
         ]
       }
+      cart_items: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string | null
+          quantity: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string | null
+          quantity?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       case_studies: {
         Row: {
           author_id: string | null
@@ -120,6 +183,9 @@ export type Database = {
           image_url: string | null
           published_at: string | null
           region: string
+          success_metrics: Json | null
+          summary: string | null
+          tags: string[] | null
           title: string
           updated_at: string | null
         }
@@ -132,6 +198,9 @@ export type Database = {
           image_url?: string | null
           published_at?: string | null
           region: string
+          success_metrics?: Json | null
+          summary?: string | null
+          tags?: string[] | null
           title: string
           updated_at?: string | null
         }
@@ -144,6 +213,9 @@ export type Database = {
           image_url?: string | null
           published_at?: string | null
           region?: string
+          success_metrics?: Json | null
+          summary?: string | null
+          tags?: string[] | null
           title?: string
           updated_at?: string | null
         }
@@ -157,24 +229,114 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          id: string
+          image_url: string | null
+          name: string
+          name_ar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          name_ar: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          name_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          content: string
+          content_id: string
+          content_type: string
+          created_at: string | null
+          id: string
+          is_approved: boolean | null
+          parent_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          content_id: string
+          content_type: string
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          content_id?: string
+          content_type?: string
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          parent_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dashboard_stats: {
         Row: {
           id: string
-          last_updated: string
-          stat_type: string
-          value: number
+          last_updated: string | null
+          metric_name: string
+          metric_value: number | null
+          percentage_change: number | null
+          previous_value: number | null
         }
         Insert: {
           id?: string
-          last_updated?: string
-          stat_type: string
-          value?: number
+          last_updated?: string | null
+          metric_name: string
+          metric_value?: number | null
+          percentage_change?: number | null
+          previous_value?: number | null
         }
         Update: {
           id?: string
-          last_updated?: string
-          stat_type?: string
-          value?: number
+          last_updated?: string | null
+          metric_name?: string
+          metric_value?: number | null
+          percentage_change?: number | null
+          previous_value?: number | null
         }
         Relationships: []
       }
@@ -183,81 +345,262 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          name: string | null
+          preferences: Json | null
           subscribed: boolean | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
           id?: string
+          name?: string | null
+          preferences?: Json | null
           subscribed?: boolean | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
           id?: string
+          name?: string | null
+          preferences?: Json | null
           subscribed?: boolean | null
+          updated_at?: string | null
         }
         Relationships: []
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string | null
+          price: number
+          product_id: string | null
+          quantity: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          price: number
+          product_id?: string | null
+          quantity: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          price?: number
+          product_id?: string | null
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          phone: string
+          shipping_address: string
+          status: string
+          total_amount: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phone: string
+          shipping_address: string
+          status?: string
+          total_amount: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          shipping_address?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          description: string | null
+          description_ar: string | null
+          id: string
+          images: string[] | null
+          is_active: boolean | null
+          name: string
+          name_ar: string
+          price: number
+          seller_id: string | null
+          stock_quantity: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          name: string
+          name_ar: string
+          price: number
+          seller_id?: string | null
+          stock_quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          images?: string[] | null
+          is_active?: boolean | null
+          name?: string
+          name_ar?: string
+          price?: number
+          seller_id?: string | null
+          stock_quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
+          email: string | null
           first_name: string | null
           id: string
+          is_active: boolean | null
           last_name: string | null
-          newsletter_subscribed: boolean | null
           permissions: Json | null
-          role: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          email?: string | null
           first_name?: string | null
           id: string
+          is_active?: boolean | null
           last_name?: string | null
-          newsletter_subscribed?: boolean | null
           permissions?: Json | null
-          role?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          email?: string | null
           first_name?: string | null
           id?: string
+          is_active?: boolean | null
           last_name?: string | null
-          newsletter_subscribed?: boolean | null
           permissions?: Json | null
-          role?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
         }
         Relationships: []
       }
       recent_activities: {
         Row: {
-          activity_text_ar: string
-          activity_text_en: string
-          created_at: string
+          activity_type: string
+          created_at: string | null
+          description: string | null
           id: string
+          metadata: Json | null
+          title: string
+          user_id: string | null
         }
         Insert: {
-          activity_text_ar: string
-          activity_text_en: string
-          created_at?: string
+          activity_type: string
+          created_at?: string | null
+          description?: string | null
           id?: string
+          metadata?: Json | null
+          title: string
+          user_id?: string | null
         }
         Update: {
-          activity_text_ar?: string
-          activity_text_en?: string
-          created_at?: string
+          activity_type?: string
+          created_at?: string | null
+          description?: string | null
           id?: string
+          metadata?: Json | null
+          title?: string
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "recent_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       videos: {
         Row: {
@@ -265,8 +608,11 @@ export type Database = {
           category: string
           created_at: string | null
           description: string | null
+          duration: number | null
           id: string
+          likes: number | null
           published_at: string | null
+          tags: string[] | null
           thumbnail_url: string | null
           title: string
           updated_at: string | null
@@ -278,8 +624,11 @@ export type Database = {
           category: string
           created_at?: string | null
           description?: string | null
+          duration?: number | null
           id?: string
+          likes?: number | null
           published_at?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string | null
@@ -291,8 +640,11 @@ export type Database = {
           category?: string
           created_at?: string | null
           description?: string | null
+          duration?: number | null
           id?: string
+          likes?: number | null
           published_at?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
@@ -314,9 +666,99 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      set_user_as_admin: {
-        Args: { user_email: string }
+      create_article: {
+        Args: {
+          article_title: string
+          article_content: string
+          article_category: string
+          article_excerpt?: string
+          article_image_url?: string
+          article_tags?: string[]
+        }
         Returns: string
+      }
+      create_case_study: {
+        Args: {
+          study_title: string
+          study_content: string
+          study_category: string
+          study_region: string
+          study_summary?: string
+          study_image_url?: string
+          study_tags?: string[]
+          study_success_metrics?: Json
+        }
+        Returns: string
+      }
+      create_first_admin: {
+        Args: { target_email: string }
+        Returns: string
+      }
+      create_video: {
+        Args: {
+          video_title: string
+          video_description: string
+          video_url: string
+          video_category: string
+          video_thumbnail_url?: string
+          video_tags?: string[]
+          video_duration?: number
+        }
+        Returns: string
+      }
+      delete_article: {
+        Args: { article_id: string }
+        Returns: boolean
+      }
+      get_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          metric_name: string
+          metric_value: number
+          previous_value: number
+          percentage_change: number
+        }[]
+      }
+      get_recent_activities: {
+        Args: { limit_count?: number }
+        Returns: {
+          id: string
+          user_id: string
+          activity_type: string
+          title: string
+          description: string
+          created_at: string
+          user_name: string
+        }[]
+      }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      make_user_admin: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
+      update_article: {
+        Args: {
+          article_id: string
+          article_title: string
+          article_content: string
+          article_category: string
+          article_status?: string
+          article_excerpt?: string
+          article_image_url?: string
+          article_tags?: string[]
+        }
+        Returns: boolean
+      }
+      update_booking_status: {
+        Args: { booking_id: string; new_status: string }
+        Returns: boolean
       }
       update_dashboard_stats: {
         Args: Record<PropertyKey, never>
@@ -324,7 +766,9 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      booking_status: "pending" | "confirmed" | "cancelled" | "completed"
+      content_status: "draft" | "published" | "archived"
+      user_role: "user" | "admin" | "moderator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -439,6 +883,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      booking_status: ["pending", "confirmed", "cancelled", "completed"],
+      content_status: ["draft", "published", "archived"],
+      user_role: ["user", "admin", "moderator"],
+    },
   },
 } as const
