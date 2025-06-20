@@ -11,7 +11,7 @@ import { toast } from '@/components/ui/sonner';
 
 interface Booking {
   id: string;
-  service: string;
+  service_type: string;
   booking_date: string;
   booking_time: string;
   status: string;
@@ -190,7 +190,7 @@ const UserBookingsPanel = () => {
               >
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{booking.service}</h3>
+                    <h3 className="font-semibold text-lg">{booking.service_type}</h3>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                       <span className="flex items-center gap-1">
                         <CalendarCheck className="h-4 w-4" />

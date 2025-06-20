@@ -5,58 +5,107 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DashboardStat {
   id: string;
-  stat_type: string;
-  value: number;
+  metric_name: string;
+  metric_value: number;
+  previous_value: number;
+  percentage_change: number;
   last_updated: string;
 }
 
 interface RecentActivity {
   id: string;
-  activity_text_en: string;
-  activity_text_ar: string;
+  activity_type: string;
+  title: string;
+  description: string;
   created_at: string;
+  user_id: string;
 }
 
 // البيانات الوهمية للإحصائيات
 const mockStats: DashboardStat[] = [
-  { id: '1', stat_type: 'total_articles', value: 45, last_updated: new Date().toISOString() },
-  { id: '2', stat_type: 'total_videos', value: 23, last_updated: new Date().toISOString() },
-  { id: '3', stat_type: 'case_studies', value: 12, last_updated: new Date().toISOString() },
-  { id: '4', stat_type: 'active_users', value: 156, last_updated: new Date().toISOString() },
-  { id: '5', stat_type: 'pending_bookings', value: 8, last_updated: new Date().toISOString() }
+  { 
+    id: '1', 
+    metric_name: 'total_articles', 
+    metric_value: 45, 
+    previous_value: 40,
+    percentage_change: 12.5,
+    last_updated: new Date().toISOString() 
+  },
+  { 
+    id: '2', 
+    metric_name: 'total_videos', 
+    metric_value: 23, 
+    previous_value: 20,
+    percentage_change: 15.0,
+    last_updated: new Date().toISOString() 
+  },
+  { 
+    id: '3', 
+    metric_name: 'case_studies', 
+    metric_value: 12, 
+    previous_value: 10,
+    percentage_change: 20.0,
+    last_updated: new Date().toISOString() 
+  },
+  { 
+    id: '4', 
+    metric_name: 'active_users', 
+    metric_value: 156, 
+    previous_value: 140,
+    percentage_change: 11.4,
+    last_updated: new Date().toISOString() 
+  },
+  { 
+    id: '5', 
+    metric_name: 'pending_bookings', 
+    metric_value: 8, 
+    previous_value: 5,
+    percentage_change: 60.0,
+    last_updated: new Date().toISOString() 
+  }
 ];
 
 // البيانات الوهمية للأنشطة الحديثة
 const mockActivities: RecentActivity[] = [
   {
     id: '1',
-    activity_text_en: 'New article published: Modern Farming Techniques',
-    activity_text_ar: 'تم نشر مقال جديد: تقنيات الزراعة الحديثة',
-    created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString()
+    activity_type: 'article_created',
+    title: 'New article published',
+    description: 'Modern Farming Techniques',
+    created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    user_id: 'user1'
   },
   {
     id: '2',
-    activity_text_en: 'New user registered: Ahmed Mohamed',
-    activity_text_ar: 'مستخدم جديد سجل: أحمد محمد',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
+    activity_type: 'user_registered',
+    title: 'New user registered',
+    description: 'Ahmed Mohamed',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    user_id: 'user2'
   },
   {
     id: '3',
-    activity_text_en: 'Video uploaded: Soil Analysis Methods',
-    activity_text_ar: 'تم رفع فيديو: طرق تحليل التربة',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString()
+    activity_type: 'video_uploaded',
+    title: 'Video uploaded',
+    description: 'Soil Analysis Methods',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
+    user_id: 'user3'
   },
   {
     id: '4',
-    activity_text_en: 'New consultation booking confirmed',
-    activity_text_ar: 'تم تأكيد حجز استشارة جديدة',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString()
+    activity_type: 'booking_confirmed',
+    title: 'New consultation booking',
+    description: 'Booking confirmed',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString(),
+    user_id: 'user4'
   },
   {
     id: '5',
-    activity_text_en: 'Case study added: Successful Crop Rotation',
-    activity_text_ar: 'تم إضافة دراسة حالة: دورة المحاصيل الناجحة',
-    created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString()
+    activity_type: 'case_study_added',
+    title: 'Case study added',
+    description: 'Successful Crop Rotation',
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
+    user_id: 'user5'
   }
 ];
 
@@ -76,7 +125,7 @@ export const useDashboardStats = () => {
         const { data: statsData } = await supabase
           .from('dashboard_stats')
           .select('*')
-          .order('stat_type');
+          .order('metric_name');
 
         const { data: activitiesData } = await supabase
           .from('recent_activities')
@@ -97,20 +146,22 @@ export const useDashboardStats = () => {
         if (!statsData || statsData.length === 0) {
           console.log('إضافة البيانات الأساسية للإحصائيات');
           await supabase.from('dashboard_stats').upsert([
-            { stat_type: 'total_articles', value: 45 },
-            { stat_type: 'total_videos', value: 23 },
-            { stat_type: 'case_studies', value: 12 },
-            { stat_type: 'active_users', value: 156 },
-            { stat_type: 'pending_bookings', value: 8 }
+            { metric_name: 'total_articles', metric_value: 45, previous_value: 40, percentage_change: 12.5 },
+            { metric_name: 'total_videos', metric_value: 23, previous_value: 20, percentage_change: 15.0 },
+            { metric_name: 'case_studies', metric_value: 12, previous_value: 10, percentage_change: 20.0 },
+            { metric_name: 'active_users', metric_value: 156, previous_value: 140, percentage_change: 11.4 },
+            { metric_name: 'pending_bookings', metric_value: 8, previous_value: 5, percentage_change: 60.0 }
           ]);
         }
 
         if (!activitiesData || activitiesData.length === 0) {
           console.log('إضافة الأنشطة الأساسية');
           await supabase.from('recent_activities').insert(mockActivities.map(activity => ({
-            activity_text_en: activity.activity_text_en,
-            activity_text_ar: activity.activity_text_ar,
-            created_at: activity.created_at
+            activity_type: activity.activity_type,
+            title: activity.title,
+            description: activity.description,
+            created_at: activity.created_at,
+            user_id: activity.user_id
           })));
         }
 
@@ -131,7 +182,7 @@ export const useDashboardStats = () => {
       // تحديث البيانات الوهمية بأرقام جديدة
       const updatedMockStats = mockStats.map(stat => ({
         ...stat,
-        value: stat.value + Math.floor(Math.random() * 5) + 1,
+        metric_value: stat.metric_value + Math.floor(Math.random() * 5) + 1,
         last_updated: new Date().toISOString()
       }));
       setStats(updatedMockStats);
@@ -143,7 +194,7 @@ export const useDashboardStats = () => {
         const { data: statsData } = await supabase
           .from('dashboard_stats')
           .select('*')
-          .order('stat_type');
+          .order('metric_name');
 
         if (statsData && statsData.length > 0) {
           setStats(statsData);
@@ -156,13 +207,13 @@ export const useDashboardStats = () => {
     }
   };
 
-  const getStatValue = (statType: string): number => {
-    const stat = stats.find(s => s.stat_type === statType);
-    return stat?.value || 0;
+  const getStatValue = (metricName: string): number => {
+    const stat = stats.find(s => s.metric_name === metricName);
+    return stat?.metric_value || 0;
   };
 
   const getActivityText = (activity: RecentActivity): string => {
-    return language === 'en' ? activity.activity_text_en : activity.activity_text_ar;
+    return language === 'en' ? activity.title : activity.description;
   };
 
   return {
