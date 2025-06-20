@@ -32,7 +32,10 @@ const NewsletterSubscription: React.FC<NewsletterSubscriptionProps> = ({ classNa
             .eq('id', user.id)
             .single();
           
-          if (error) throw error;
+          if (error) {
+            console.error('Error checking subscription:', error);
+            return;
+          }
           
           if (data && data.newsletter_subscribed) {
             setSubscribed(true);

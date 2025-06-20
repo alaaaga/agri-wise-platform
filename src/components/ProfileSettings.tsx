@@ -44,13 +44,19 @@ const ProfileSettings = () => {
           .eq('id', user.id)
           .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching profile:', error);
+          toast.error(language === 'en' 
+            ? 'Failed to load profile information' 
+            : 'فشل في تحميل معلومات الملف الشخصي');
+          return;
+        }
         
         setProfile({
-          firstName: data.first_name || '',
-          lastName: data.last_name || '',
-          bio: data.bio || '',
-          newsletterSubscribed: data.newsletter_subscribed || false
+          firstName: data?.first_name || '',
+          lastName: data?.last_name || '',
+          bio: data?.bio || '',
+          newsletterSubscribed: data?.newsletter_subscribed || false
         });
       } catch (error) {
         console.error('Error fetching profile:', error);
