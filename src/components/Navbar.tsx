@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
+import { useCart } from '@/hooks/useCart';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,16 +12,32 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, X, ChevronDown, User, LogOut, UserPlus, LogIn, Moon, Sun, LayoutDashboard } from 'lucide-react';
+import { 
+  Menu, 
+  X, 
+  ChevronDown, 
+  User, 
+  LogOut, 
+  UserPlus, 
+  LogIn, 
+  Moon, 
+  Sun, 
+  LayoutDashboard,
+  ShoppingCart,
+  Store,
+  Package
+} from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 
 const Navbar = () => {
   const { language, setLanguage, t } = useLanguage();
   const { user, isAuthenticated, isAdmin, logout, getUserDisplayName, checkAdminRole } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { getCartCount } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const cartCount = getCartCount();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -75,6 +92,12 @@ const Navbar = () => {
               {t('nav.services')}
             </Link>
             
+            {/* Marketplace Link */}
+            <Link to="/marketplace" className="text-gray-700 dark:text-gray-200 hover:text-primary font-medium px-2 flex items-center gap-1">
+              <Store className="h-4 w-4" />
+              {language === 'en' ? 'Marketplace' : 'المتجر'}
+            </Link>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center text-gray-700 dark:text-gray-200 hover:text-primary font-medium px-2">
@@ -119,8 +142,20 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Auth buttons, theme toggle and language toggle */}
+          {/* Auth buttons, cart, theme toggle and language toggle */}
           <div className="hidden md:flex md:items-center md:space-x-4 rtl:space-x-reverse">
+            {/* Cart Icon */}
+            {isAuthenticated && (
+              <Link to="/cart" className="relative p-2 text-gray-700 dark:text-gray-200 hover:text-primary">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
             <Button 
               variant="ghost" 
               onClick={toggleTheme}
@@ -159,6 +194,12 @@ const Navbar = () => {
                       {t('nav.account')}
                     </Link>
                   </DropdownMenuItem>
+                  <DropdownMenuItem className="dark:text-gray-200 dark:focus:text-white">
+                    <Link to="/orders" className="w-full flex items-center">
+                      <Package className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                      <span>{language === 'en' ? 'My Orders' : 'طلباتي'}</span>
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="flex items-center dark:text-gray-200 dark:focus:text-white">
                     <LogOut className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
                     <span>{language === 'en' ? 'Logout' : 'تسجيل الخروج'}</span>
@@ -193,6 +234,18 @@ const Navbar = () => {
 
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center space-x-4 rtl:space-x-reverse">
+            {/* Mobile Cart Icon */}
+            {isAuthenticated && (
+              <Link to="/cart" className="relative p-1 text-gray-700 dark:text-gray-200">
+                <ShoppingCart className="h-5 w-5" />
+                {cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            )}
+
             <Button 
               variant="ghost" 
               onClick={toggleTheme}
@@ -230,6 +283,13 @@ const Navbar = () => {
             <Link to="/services" className="text-gray-700 dark:text-gray-200 hover:text-primary font-medium py-2">
               {t('nav.services')}
             </Link>
+            
+            {/* Mobile Marketplace Link */}
+            <Link to="/marketplace" className="text-gray-700 dark:text-gray-200 hover:text-primary font-medium py-2 flex items-center gap-2">
+              <Store className="h-4 w-4" />
+              {language === 'en' ? 'Marketplace' : 'المتجر'}
+            </Link>
+            
             <div className="border-t border-gray-200 dark:border-gray-700 py-2">
               <div className="text-gray-700 dark:text-gray-200 font-medium mb-2">{t('nav.content')}</div>
               <div className="pl-4 rtl:pr-4 rtl:pl-0 space-y-2">
@@ -268,6 +328,10 @@ const Navbar = () => {
                   )}
                   <Link to="/account" className="block text-gray-700 dark:text-gray-200 hover:text-primary font-medium py-2">
                     {t('nav.account')}
+                  </Link>
+                  <Link to="/orders" className="flex items-center text-gray-700 dark:text-gray-200 hover:text-primary font-medium py-2">
+                    <Package className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
+                    <span>{language === 'en' ? 'My Orders' : 'طلباتي'}</span>
                   </Link>
                   <Button 
                     variant="outline" 
