@@ -3,6 +3,7 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/hooks/useCart';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,27 @@ import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 
 const Cart = () => {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const { cartItems, loading, updateQuantity, removeFromCart, getCartTotal } = useCart();
   const navigate = useNavigate();
+
+  if (!user) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <ShoppingBag className="h-24 w-24 mx-auto text-gray-400 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              {language === 'en' ? 'Please login to view your cart' : 'يرجى تسجيل الدخول لعرض سلتك'}
+            </h2>
+            <Button onClick={() => navigate('/login')}>
+              {language === 'en' ? 'Login' : 'تسجيل الدخول'}
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (loading) {
     return (
@@ -77,7 +97,10 @@ const Cart = () => {
                         {language === 'en' ? item.product.name : item.product.name_ar}
                       </h3>
                       <p className="text-xl font-bold text-primary">
-                        {item.product.price} {language === 'en' ? 'SAR' : 'ريال'}
+                        {item.product.price.toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {language === 'en' ? 'Unit:' : 'الوحدة:'} {item.product.unit || 'وحدة'}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2 rtl:space-x-reverse">
@@ -85,6 +108,7 @@ const Cart = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        disabled={item.quantity <= 1}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -102,6 +126,11 @@ const Cart = () => {
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold">
+                        {(item.product.price * item.quantity).toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                      </p>
                     </div>
                     <Button
                       variant="ghost"
@@ -126,9 +155,15 @@ const Cart = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>{language === 'en' ? 'Total:' : 'المجموع:'}</span>
-                  <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>{language === 'en' ? 'Items:' : 'العناصر:'}</span>
+                    <span>{cartItems.reduce((total, item) => total + item.quantity, 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-semibold border-t pt-2">
+                    <span>{language === 'en' ? 'Total:' : 'المجموع:'}</span>
+                    <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}</span>
+                  </div>
                 </div>
                 <Button 
                   className="w-full" 

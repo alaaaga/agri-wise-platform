@@ -34,12 +34,13 @@ const Checkout = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!user || cartItems.length === 0) {
       toast.error(language === 'en' ? 'Please login and add items to cart' : 'يرجى تسجيل الدخول وإضافة عناصر للسلة');
       return;
     }
 
-    if (!formData.shipping_address || !formData.phone) {
+    if (!formData.shipping_address.trim() || !formData.phone.trim()) {
       toast.error(language === 'en' ? 'Please fill all required fields' : 'يرجى ملء جميع الحقول المطلوبة');
       return;
     }
@@ -54,9 +55,9 @@ const Checkout = () => {
         .insert({
           user_id: user.id,
           total_amount: getCartTotal(),
-          shipping_address: formData.shipping_address,
-          phone: formData.phone,
-          notes: formData.notes,
+          shipping_address: formData.shipping_address.trim(),
+          phone: formData.phone.trim(),
+          notes: formData.notes.trim() || null,
           status: 'pending'
         })
         .select()
@@ -104,8 +105,26 @@ const Checkout = () => {
   };
 
   if (cartItems.length === 0) {
-    navigate('/cart');
-    return null;
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              {language === 'en' ? 'Your cart is empty' : 'سلتك فارغة'}
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {language === 'en' 
+                ? 'Add some products to continue with checkout' 
+                : 'أضف بعض المنتجات لمتابعة عملية الشراء'
+              }
+            </p>
+            <Button onClick={() => navigate('/marketplace')}>
+              {language === 'en' ? 'Go to Marketplace' : 'اذهب للمتجر'}
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
   }
 
   return (
@@ -174,6 +193,17 @@ const Checkout = () => {
                     }
                   />
                 </div>
+                
+                <Button 
+                  type="submit"
+                  disabled={loading || !formData.shipping_address.trim() || !formData.phone.trim()}
+                  className="w-full mt-6"
+                >
+                  {loading 
+                    ? (language === 'en' ? 'Processing...' : 'جاري المعالجة...')
+                    : (language === 'en' ? 'Place Order' : 'إتمام الطلب')
+                  }
+                </Button>
               </form>
             </CardContent>
           </Card>
@@ -193,7 +223,7 @@ const Checkout = () => {
                       {language === 'en' ? item.product.name : item.product.name_ar}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {language === 'en' ? 'Quantity:' : 'الكمية:'} {item.quantity}
+                      {language === 'en' ? 'Quantity:' : 'الكمية:'} {item.quantity} {item.product.unit || 'وحدة'}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       {language === 'en' ? 'Unit price:' : 'سعر الوحدة:'} {item.product.price.toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
@@ -209,16 +239,6 @@ const Checkout = () => {
                 <span>{language === 'en' ? 'Total:' : 'المجموع:'}</span>
                 <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}</span>
               </div>
-              <Button 
-                onClick={handleSubmit}
-                disabled={loading || !formData.shipping_address || !formData.phone}
-                className="w-full"
-              >
-                {loading 
-                  ? (language === 'en' ? 'Processing...' : 'جاري المعالجة...')
-                  : (language === 'en' ? 'Place Order' : 'إتمام الطلب')
-                }
-              </Button>
             </CardContent>
           </Card>
         </div>

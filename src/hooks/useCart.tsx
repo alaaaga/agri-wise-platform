@@ -14,6 +14,7 @@ interface CartItem {
     name_ar: string;
     price: number;
     images: string[];
+    unit?: string;
   };
 }
 
@@ -27,6 +28,8 @@ export const useCart = () => {
     
     setLoading(true);
     try {
+      console.log('جاري جلب عناصر السلة للمستخدم:', user.id);
+      
       const { data, error } = await supabase
         .from('cart_items')
         .select(`
@@ -38,12 +41,18 @@ export const useCart = () => {
             name,
             name_ar,
             price,
-            images
+            images,
+            unit
           )
         `)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('خطأ في جلب عناصر السلة:', error);
+        throw error;
+      }
+
+      console.log('تم جلب عناصر السلة بنجاح:', data);
 
       const formattedItems = data?.map(item => ({
         id: item.id,
@@ -138,6 +147,8 @@ export const useCart = () => {
     if (!user) return;
 
     try {
+      console.log('جاري مسح السلة للمستخدم:', user.id);
+      
       const { error } = await supabase
         .from('cart_items')
         .delete()
@@ -145,6 +156,7 @@ export const useCart = () => {
 
       if (error) throw error;
 
+      console.log('تم مسح السلة بنجاح');
       setCartItems([]);
     } catch (error) {
       console.error('Error clearing cart:', error);
