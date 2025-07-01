@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,17 +25,20 @@ import {
   Loader2,
   Database,
   RefreshCw,
-  Shield
+  Shield,
+  Package
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from '@/hooks/useTheme';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { useOrderManagement } from '@/hooks/useOrderManagement';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import AdminArticlesPanel from '@/components/admin/AdminArticlesPanel';
 import AdminVideosPanel from '@/components/admin/AdminVideosPanel';
 import AdminCaseStudiesPanel from '@/components/admin/AdminCaseStudiesPanel';
 import AdminBookingsPanel from '@/components/admin/AdminBookingsPanel';
+import AdminOrdersPanel from '@/components/admin/AdminOrdersPanel';
 import UserPermissionsPanel from '@/components/admin/UserPermissionsPanel';
 import { toast } from "@/components/ui/sonner";
 
@@ -57,6 +59,8 @@ const AdminDashboard = () => {
     getStatValue,
     getActivityText
   } = useDashboardStats();
+
+  const { stats: orderStats, fetchAdminStats } = useOrderManagement();
 
   // تحقق من دور المسؤول عند تحميل الصفحة
   useEffect(() => {
@@ -91,6 +95,7 @@ const AdminDashboard = () => {
       cases: language === 'en' ? 'Case Studies' : 'دراسات الحالة',
       users: language === 'en' ? 'Users' : 'المستخدمين',
       bookings: language === 'en' ? 'Bookings' : 'الحجوزات',
+      orders: language === 'en' ? 'Orders' : 'الطلبات',
       permissions: language === 'en' ? 'Permissions' : 'الصلاحيات',
     };
     
@@ -136,34 +141,34 @@ const AdminDashboard = () => {
 
   const dashboardItems = [
     { 
-      count: getStatValue('total_articles'), 
-      label: language === 'en' ? 'Total Articles' : 'إجمالي المقالات', 
+      count: orderStats?.total_orders || getStatValue('total_articles'), 
+      label: language === 'en' ? 'Total Orders' : 'إجمالي الطلبات', 
       color: 'bg-blue-100 dark:bg-blue-900', 
-      icon: FileText 
+      icon: Package 
     },
     { 
-      count: getStatValue('total_videos'), 
-      label: language === 'en' ? 'Total Videos' : 'إجمالي الفيديوهات', 
-      color: 'bg-green-100 dark:bg-green-900', 
-      icon: Video 
-    },
-    { 
-      count: getStatValue('case_studies'), 
-      label: language === 'en' ? 'Case Studies' : 'دراسات حالة', 
+      count: orderStats?.pending_orders || getStatValue('total_videos'), 
+      label: language === 'en' ? 'Pending Orders' : 'الطلبات المعلقة', 
       color: 'bg-yellow-100 dark:bg-yellow-900', 
-      icon: BookOpenText 
+      icon: AlertCircle 
     },
     { 
-      count: getStatValue('active_users'), 
-      label: language === 'en' ? 'Active Users' : 'المستخدمين النشطين', 
+      count: Math.floor(orderStats?.total_revenue || 0), 
+      label: language === 'en' ? 'Total Revenue (EGP)' : 'إجمالي الإيرادات (جنيه)', 
+      color: 'bg-green-100 dark:bg-green-900', 
+      icon: BarChart 
+    },
+    { 
+      count: orderStats?.total_users || getStatValue('active_users'), 
+      label: language === 'en' ? 'Total Users' : 'إجمالي المستخدمين', 
       color: 'bg-indigo-100 dark:bg-indigo-900', 
       icon: Users 
     },
     { 
-      count: getStatValue('pending_bookings'), 
-      label: language === 'en' ? 'Pending Bookings' : 'الحجوزات المعلقة', 
-      color: 'bg-red-100 dark:bg-red-900', 
-      icon: CalendarCheck 
+      count: orderStats?.total_products || getStatValue('pending_bookings'), 
+      label: language === 'en' ? 'Total Products' : 'إجمالي المنتجات', 
+      color: 'bg-purple-100 dark:bg-purple-900', 
+      icon: Package 
     }
   ];
 
@@ -171,16 +176,18 @@ const AdminDashboard = () => {
     const actionMessages: Record<string, string> = {
       article: language === 'en' ? 'Switching to articles management...' : 'جاري التبديل إلى إدارة المقالات...',
       video: language === 'en' ? 'Switching to videos management...' : 'جاري التبديل إلى إدارة الفيديوهات...',
-      case: language === 'en' ? 'Switching to case studies management...' : 'جاري التبديل إلى إدارة دراسات الحالة...'
+      case: language === 'en' ? 'Switching to case studies management...' : 'جاري التبديل إلى إدارة دراسات الحالة...',
+      orders: language === 'en' ? 'Switching to orders management...' : 'جاري التبديل إلى إدارة الطلبات...'
     };
     
     toast.success(actionMessages[action]);
-    setActiveTab(action === 'article' ? 'articles' : action === 'video' ? 'videos' : 'cases');
+    setActiveTab(action === 'article' ? 'articles' : action === 'video' ? 'videos' : action === 'case' ? 'cases' : 'orders');
   };
 
   const handleRefreshStats = async () => {
     toast.info(language === 'en' ? 'Refreshing statistics...' : 'جاري تحديث الإحصائيات...');
     await refreshStats();
+    await fetchAdminStats();
     toast.success(language === 'en' ? 'Statistics updated!' : 'تم تحديث الإحصائيات!');
   };
 
@@ -215,6 +222,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <LayoutDashboard className="h-4 w-4" />
               <span>{language === 'en' ? 'Overview' : 'نظرة عامة'}</span>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              <span>{language === 'en' ? 'Orders' : 'الطلبات'}</span>
             </TabsTrigger>
             <TabsTrigger value="articles" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -301,6 +312,10 @@ const AdminDashboard = () => {
                         {language === 'en' ? 'Quick Actions' : 'إجراءات سريعة'}
                       </h3>
                       <div className="flex flex-col gap-3">
+                        <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('orders')}>
+                          <Package className="mr-2 h-4 w-4" />
+                          {language === 'en' ? 'Manage Orders' : 'إدارة الطلبات'}
+                        </Button>
                         <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('article')}>
                           <FileText className="mr-2 h-4 w-4" />
                           {language === 'en' ? 'Manage Articles' : 'إدارة المقالات'}
@@ -319,6 +334,10 @@ const AdminDashboard = () => {
                 </div>
               </>
             )}
+          </TabsContent>
+
+          <TabsContent value="orders">
+            <AdminOrdersPanel />
           </TabsContent>
 
           <TabsContent value="articles">

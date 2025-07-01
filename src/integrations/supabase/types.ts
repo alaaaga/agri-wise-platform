@@ -420,47 +420,56 @@ export type Database = {
       }
       orders: {
         Row: {
+          admin_notes: string | null
           created_at: string
           currency: string | null
+          estimated_delivery_date: string | null
           id: string
           notes: string | null
           payment_method: string | null
           payment_status: string | null
           phone: string
           shipping_address: string
-          status: string
+          status: Database["public"]["Enums"]["order_status_enum"]
           stripe_session_id: string | null
           total_amount: number
+          tracking_number: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
           currency?: string | null
+          estimated_delivery_date?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
           payment_status?: string | null
           phone: string
           shipping_address: string
-          status?: string
+          status?: Database["public"]["Enums"]["order_status_enum"]
           stripe_session_id?: string | null
           total_amount: number
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
           currency?: string | null
+          estimated_delivery_date?: string | null
           id?: string
           notes?: string | null
           payment_method?: string | null
           payment_status?: string | null
           phone?: string
           shipping_address?: string
-          status?: string
+          status?: Database["public"]["Enums"]["order_status_enum"]
           stripe_session_id?: string | null
           total_amount?: number
+          tracking_number?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -734,6 +743,16 @@ export type Database = {
         Args: { article_id: string }
         Returns: boolean
       }
+      get_admin_dashboard_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_orders: number
+          pending_orders: number
+          total_revenue: number
+          total_users: number
+          total_products: number
+        }[]
+      }
       get_dashboard_stats: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -788,10 +807,28 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      update_order_status: {
+        Args: {
+          order_id: string
+          new_status: string
+          admin_notes?: string
+          tracking_number?: string
+          estimated_delivery?: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       booking_status: "pending" | "confirmed" | "cancelled" | "completed"
       content_status: "draft" | "published" | "archived"
+      order_status_enum:
+        | "pending"
+        | "confirmed"
+        | "processing"
+        | "shipped"
+        | "delivered"
+        | "cancelled"
+        | "refunded"
       user_role: "user" | "admin" | "moderator"
     }
     CompositeTypes: {
@@ -910,6 +947,15 @@ export const Constants = {
     Enums: {
       booking_status: ["pending", "confirmed", "cancelled", "completed"],
       content_status: ["draft", "published", "archived"],
+      order_status_enum: [
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "refunded",
+      ],
       user_role: ["user", "admin", "moderator"],
     },
   },

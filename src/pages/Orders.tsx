@@ -6,9 +6,11 @@ import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Eye, Phone, MapPin, Calendar, Clock, User, FileText, CreditCard } from 'lucide-react';
+import { Package, Eye, Phone, MapPin, Calendar, Clock, User, FileText, CreditCard, Truck, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "@/components/ui/sonner";
 
 interface OrderItem {
   id: string;
@@ -32,6 +34,9 @@ interface Order {
   shipping_address: string;
   phone: string;
   notes: string;
+  admin_notes: string;
+  tracking_number: string;
+  estimated_delivery_date: string;
   created_at: string;
   updated_at: string;
   order_items: OrderItem[];
@@ -39,7 +44,7 @@ interface Order {
 
 const Orders = () => {
   const { language } = useLanguage();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
@@ -96,6 +101,7 @@ const Orders = () => {
       setOrders(formattedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      toast.error(language === 'en' ? 'Error loading orders' : 'خطأ في تحميل الطلبات');
     } finally {
       setLoading(false);
     }
@@ -113,13 +119,41 @@ const Orders = () => {
     });
   };
 
+  const cancelOrder = async (orderId: string) => {
+    if (!isAdmin) {
+      toast.error(language === 'en' ? 'Only admins can cancel orders' : 'المسؤولون فقط يمكنهم إلغاء الطلبات');
+      return;
+    }
+
+    try {
+      const { error } = await supabase.rpc('update_order_status', {
+        order_id: orderId,
+        new_status: 'cancelled',
+        admin_notes: 'تم إلغاء الطلب بواسطة المستخدم'
+      });
+
+      if (error) {
+        console.error('خطأ في إلغاء الطلب:', error);
+        throw error;
+      }
+
+      toast.success(language === 'en' ? 'Order cancelled successfully' : 'تم إلغاء الطلب بنجاح');
+      await fetchOrders();
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast.error(language === 'en' ? 'Error cancelling order' : 'خطأ في إلغاء الطلب');
+    }
+  };
+
   const getStatusText = (status: string) => {
     const statusMap = {
       pending: language === 'en' ? 'Pending' : 'قيد الانتظار',
       confirmed: language === 'en' ? 'Confirmed' : 'مؤكد',
+      processing: language === 'en' ? 'Processing' : 'قيد المعالجة',
       shipped: language === 'en' ? 'Shipped' : 'تم الشحن',
       delivered: language === 'en' ? 'Delivered' : 'تم التسليم',
-      cancelled: language === 'en' ? 'Cancelled' : 'ملغي'
+      cancelled: language === 'en' ? 'Cancelled' : 'ملغي',
+      refunded: language === 'en' ? 'Refunded' : 'مُسترد'
     };
     return statusMap[status as keyof typeof statusMap] || status;
   };
@@ -138,9 +172,11 @@ const Orders = () => {
     const colorMap = {
       pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
       confirmed: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-      shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+      processing: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+      shipped: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
       delivered: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+      cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+      refunded: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300'
     };
     return colorMap[status as keyof typeof colorMap] || 'bg-gray-100 text-gray-800';
   };
@@ -278,6 +314,35 @@ const Orders = () => {
                     </div>
                   </div>
 
+                  {/* Tracking Information */}
+                  {order.tracking_number && (
+                    <Alert className="mb-4">
+                      <Truck className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>{language === 'en' ? 'Tracking Number:' : 'رقم التتبع:'}</strong> {order.tracking_number}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {order.estimated_delivery_date && (
+                    <Alert className="mb-4">
+                      <Calendar className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>{language === 'en' ? 'Estimated Delivery:' : 'تاريخ التسليم المتوقع:'}</strong> {formatDate(order.estimated_delivery_date)}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Admin Notes */}
+                  {order.admin_notes && (
+                    <Alert className="mb-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        <strong>{language === 'en' ? 'Admin Notes:' : 'ملاحظات المسؤول:'}</strong> {order.admin_notes}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Expandable Details */}
                   <Collapsible open={expandedOrders.has(order.id)}>
                     <CollapsibleContent className="space-y-4">
@@ -355,6 +420,19 @@ const Orders = () => {
                           )}
                         </div>
                       </div>
+
+                      {/* Action Buttons */}
+                      {order.status === 'pending' && isAdmin && (
+                        <div className="border-t pt-4">
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => cancelOrder(order.id)}
+                          >
+                            {language === 'en' ? 'Cancel Order' : 'إلغاء الطلب'}
+                          </Button>
+                        </div>
+                      )}
                     </CollapsibleContent>
                   </Collapsible>
                 </CardContent>
