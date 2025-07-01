@@ -18,7 +18,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn } = useAuth();
+  const { login } = useAuth(); // Changed from signIn to login
   const { language } = useLanguage();
   const navigate = useNavigate();
 
@@ -38,45 +38,37 @@ const Login = () => {
 
     try {
       console.log('محاولة تسجيل الدخول:', { email });
-      const { error: signInError } = await signIn(email, password);
+      await login(email, password); // Changed from signIn to login
       
-      if (signInError) {
-        console.error('خطأ في تسجيل الدخول:', signInError);
-        
-        let errorMessage = '';
-        if (signInError.message.includes('Invalid login credentials') || 
-            signInError.message.includes('invalid_credentials')) {
-          errorMessage = language === 'en' 
-            ? 'Invalid email or password. Please check your credentials and try again.' 
-            : 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق من البيانات والمحاولة مرة أخرى.';
-        } else if (signInError.message.includes('Email not confirmed')) {
-          errorMessage = language === 'en' 
-            ? 'Please confirm your email address before signing in.' 
-            : 'يرجى تأكيد عنوان البريد الإلكتروني قبل تسجيل الدخول.';
-        } else if (signInError.message.includes('Too many requests')) {
-          errorMessage = language === 'en' 
-            ? 'Too many login attempts. Please wait a moment and try again.' 
-            : 'محاولات تسجيل دخول كثيرة. يرجى الانتظار قليلاً والمحاولة مرة أخرى.';
-        } else {
-          errorMessage = language === 'en' 
-            ? 'Login failed. Please try again.' 
-            : 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
-        }
-        
-        setError(errorMessage);
-        toast.error(errorMessage);
-        return;
-      }
-
       console.log('تم تسجيل الدخول بنجاح');
       toast.success(language === 'en' ? 'Welcome back!' : 'مرحباً بعودتك!');
       navigate('/');
       
     } catch (error: any) {
-      console.error('خطأ غير متوقع في تسجيل الدخول:', error);
-      const errorMessage = language === 'en' 
-        ? 'An unexpected error occurred. Please try again.' 
-        : 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+      console.error('خطأ في تسجيل الدخول:', error);
+      
+      let errorMessage = '';
+      const errorMsg = error.message || '';
+      
+      if (errorMsg.includes('Invalid login credentials') || 
+          errorMsg.includes('invalid_credentials')) {
+        errorMessage = language === 'en' 
+          ? 'Invalid email or password. Please check your credentials and try again.' 
+          : 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق من البيانات والمحاولة مرة أخرى.';
+      } else if (errorMsg.includes('Email not confirmed')) {
+        errorMessage = language === 'en' 
+          ? 'Please confirm your email address before signing in.' 
+          : 'يرجى تأكيد عنوان البريد الإلكتروني قبل تسجيل الدخول.';
+      } else if (errorMsg.includes('Too many requests')) {
+        errorMessage = language === 'en' 
+          ? 'Too many login attempts. Please wait a moment and try again.' 
+          : 'محاولات تسجيل دخول كثيرة. يرجى الانتظار قليلاً والمحاولة مرة أخرى.';
+      } else {
+        errorMessage = language === 'en' 
+          ? 'Login failed. Please try again.' 
+          : 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+      }
+      
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
