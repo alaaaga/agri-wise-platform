@@ -97,7 +97,7 @@ const Cart = () => {
                         {language === 'en' ? item.product.name : item.product.name_ar}
                       </h3>
                       <p className="text-xl font-bold text-primary">
-                        {item.product.price.toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                        {item.product.price.toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {language === 'en' ? 'Unit:' : 'الوحدة:'} {item.product.unit || 'وحدة'}
@@ -129,7 +129,7 @@ const Cart = () => {
                     </div>
                     <div className="text-right">
                       <p className="text-lg font-bold">
-                        {(item.product.price * item.quantity).toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                        {(item.product.price * item.quantity).toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
                       </p>
                     </div>
                     <Button
@@ -162,7 +162,7 @@ const Cart = () => {
                   </div>
                   <div className="flex justify-between text-lg font-semibold border-t pt-2">
                     <span>{language === 'en' ? 'Total:' : 'المجموع:'}</span>
-                    <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}</span>
+                    <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}</span>
                   </div>
                 </div>
                 <Button 

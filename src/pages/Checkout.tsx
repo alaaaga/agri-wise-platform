@@ -12,13 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { CreditCard, ShoppingBag } from 'lucide-react';
 
 const Checkout = () => {
   const { language } = useLanguage();
   const { user } = useAuth();
-  const { cartItems, getCartTotal, clearCart } = useCart();
+  const { cartItems, getCartTotal, clearCart, loading } = useCart();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
   const [formData, setFormData] = useState({
     shipping_address: '',
     phone: '',
@@ -32,7 +33,7 @@ const Checkout = () => {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user || cartItems.length === 0) {
@@ -45,70 +46,80 @@ const Checkout = () => {
       return;
     }
 
-    setLoading(true);
+    setFormLoading(true);
     try {
-      console.log('بدء إنشاء الطلب...', { user: user.id, cartItems, total: getCartTotal() });
+      console.log('بدء عملية الدفع...', { 
+        user: user.id, 
+        cartItems, 
+        total: getCartTotal(),
+        formData 
+      });
 
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          user_id: user.id,
-          total_amount: getCartTotal(),
-          shipping_address: formData.shipping_address.trim(),
-          phone: formData.phone.trim(),
-          notes: formData.notes.trim() || null,
-          status: 'pending'
-        })
-        .select()
-        .single();
+      const orderData = {
+        items: cartItems.map(item => ({
+          product_id: item.product_id,
+          name: language === 'en' ? item.product.name : item.product.name_ar,
+          description: item.product.unit || 'وحدة',
+          price: item.product.price,
+          quantity: item.quantity
+        })),
+        total: getCartTotal(),
+        shipping_address: formData.shipping_address.trim(),
+        phone: formData.phone.trim(),
+        notes: formData.notes.trim() || null
+      };
 
-      if (orderError) {
-        console.error('خطأ في إنشاء الطلب:', orderError);
-        throw orderError;
+      console.log('إرسال بيانات الطلب:', orderData);
+
+      const { data, error } = await supabase.functions.invoke('create-payment-session', {
+        body: { orderData }
+      });
+
+      if (error) {
+        console.error('خطأ في إنشاء جلسة الدفع:', error);
+        throw error;
       }
 
-      console.log('تم إنشاء الطلب بنجاح:', order);
+      console.log('تم إنشاء جلسة الدفع بنجاح:', data);
 
-      // Create order items
-      const orderItems = cartItems.map(item => ({
-        order_id: order.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.product.price
-      }));
-
-      console.log('إنشاء عناصر الطلب:', orderItems);
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) {
-        console.error('خطأ في إنشاء عناصر الطلب:', itemsError);
-        throw itemsError;
+      if (data.url) {
+        // Clear cart before redirecting to payment
+        await clearCart();
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error('No payment URL received');
       }
 
-      console.log('تم إنشاء عناصر الطلب بنجاح');
-
-      // Clear cart
-      await clearCart();
-
-      toast.success(language === 'en' ? 'Order placed successfully!' : 'تم إرسال الطلب بنجاح!');
-      navigate('/orders');
     } catch (error) {
-      console.error('خطأ في إرسال الطلب:', error);
-      toast.error(language === 'en' ? 'Failed to place order. Please try again.' : 'فشل في إرسال الطلب. يرجى المحاولة مرة أخرى.');
+      console.error('خطأ في عملية الدفع:', error);
+      toast.error(language === 'en' ? 'Payment failed. Please try again.' : 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى.');
     } finally {
-      setLoading(false);
+      setFormLoading(false);
     }
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">
+              {language === 'en' ? 'Loading...' : 'جاري التحميل...'}
+            </p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12">
+            <ShoppingBag className="h-24 w-24 mx-auto text-gray-400 mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               {language === 'en' ? 'Your cart is empty' : 'سلتك فارغة'}
             </h2>
@@ -143,7 +154,7 @@ const Checkout = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handlePayment} className="space-y-4">
                 <div>
                   <Label htmlFor="shipping_address">
                     {language === 'en' ? 'Shipping Address *' : 'عنوان الشحن *'}
@@ -196,12 +207,13 @@ const Checkout = () => {
                 
                 <Button 
                   type="submit"
-                  disabled={loading || !formData.shipping_address.trim() || !formData.phone.trim()}
+                  disabled={formLoading || !formData.shipping_address.trim() || !formData.phone.trim()}
                   className="w-full mt-6"
                 >
-                  {loading 
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  {formLoading 
                     ? (language === 'en' ? 'Processing...' : 'جاري المعالجة...')
-                    : (language === 'en' ? 'Place Order' : 'إتمام الطلب')
+                    : (language === 'en' ? 'Pay Now' : 'ادفع الآن')
                   }
                 </Button>
               </form>
@@ -226,18 +238,22 @@ const Checkout = () => {
                       {language === 'en' ? 'Quantity:' : 'الكمية:'} {item.quantity} {item.product.unit || 'وحدة'}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {language === 'en' ? 'Unit price:' : 'سعر الوحدة:'} {item.product.price.toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                      {language === 'en' ? 'Unit price:' : 'سعر الوحدة:'} {item.product.price.toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
                     </p>
                   </div>
                   <p className="font-semibold">
-                    {(item.product.price * item.quantity).toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                    {(item.product.price * item.quantity).toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
                   </p>
                 </div>
               ))}
               <hr />
               <div className="flex justify-between text-lg font-bold">
                 <span>{language === 'en' ? 'Total:' : 'المجموع:'}</span>
-                <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}</span>
+                <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}</span>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                <p>{language === 'en' ? 'Secure payment with Stripe' : 'دفع آمن مع سترايب'}</p>
+                <p>{language === 'en' ? 'Your payment information is encrypted and secure' : 'معلومات الدفع الخاصة بك مشفرة وآمنة'}</p>
               </div>
             </CardContent>
           </Card>

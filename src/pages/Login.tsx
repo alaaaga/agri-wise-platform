@@ -1,188 +1,184 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { toast } from "@/components/ui/sonner";
+import Layout from '@/components/Layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import Layout from '@/components/Layout';
-import { LogIn, Mail, Lock, ArrowRight, UserPlus, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 const Login = () => {
-  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
-  const { language } = useLanguage();
-  const navigate = useNavigate();
-  const location = useLocation();
-  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // استخراج المسار السابق إن وجد
-  const from = location.state?.from || '/';
-  const callback = location.state?.callback;
-  
-  // إعادة توجيه المستخدم المصادق عليه بالفعل
-  useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      console.log('المستخدم مسجل الدخول بالفعل، جاري التوجيه إلى:', from);
-      navigate(from);
-    }
-  }, [isAuthenticated, authLoading, navigate, from]);
-  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const { signIn } = useAuth();
+  const { language } = useLanguage();
+  const navigate = useNavigate();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email.trim() || !password) {
-      toast.error(language === 'en' 
-        ? 'Please enter both email and password' 
-        : 'الرجاء إدخال البريد الإلكتروني وكلمة المرور');
+    if (!email || !password) {
+      const errorMsg = language === 'en' 
+        ? 'Please fill in all fields' 
+        : 'يرجى ملء جميع الحقول';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
-    
-    setIsSubmitting(true);
-    
+
+    setLoading(true);
+    setError('');
+
     try {
-      console.log('جاري محاولة تسجيل الدخول...');
-      await login(email, password);
+      console.log('محاولة تسجيل الدخول:', { email });
+      const { error: signInError } = await signIn(email, password);
       
-      toast.success(language === 'en' 
-        ? 'Welcome back!' 
-        : 'مرحبًا بعودتك!');
-      
-      // تنفيذ الدالة المرجعية في حال وجودها
-      if (typeof callback === 'function') {
-        callback();
+      if (signInError) {
+        console.error('خطأ في تسجيل الدخول:', signInError);
+        
+        let errorMessage = '';
+        if (signInError.message.includes('Invalid login credentials') || 
+            signInError.message.includes('invalid_credentials')) {
+          errorMessage = language === 'en' 
+            ? 'Invalid email or password. Please check your credentials and try again.' 
+            : 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق من البيانات والمحاولة مرة أخرى.';
+        } else if (signInError.message.includes('Email not confirmed')) {
+          errorMessage = language === 'en' 
+            ? 'Please confirm your email address before signing in.' 
+            : 'يرجى تأكيد عنوان البريد الإلكتروني قبل تسجيل الدخول.';
+        } else if (signInError.message.includes('Too many requests')) {
+          errorMessage = language === 'en' 
+            ? 'Too many login attempts. Please wait a moment and try again.' 
+            : 'محاولات تسجيل دخول كثيرة. يرجى الانتظار قليلاً والمحاولة مرة أخرى.';
+        } else {
+          errorMessage = language === 'en' 
+            ? 'Login failed. Please try again.' 
+            : 'فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.';
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return;
       }
+
+      console.log('تم تسجيل الدخول بنجاح');
+      toast.success(language === 'en' ? 'Welcome back!' : 'مرحباً بعودتك!');
+      navigate('/');
       
-      console.log('تسجيل الدخول ناجح، جاري التوجيه إلى:', from);
-      // التنقل إلى الصفحة السابقة
-      navigate(from);
-    } catch (error) {
-      console.error('تسجيل الدخول فشل:', error);
-      // لا داعي لإظهار رسالة هنا لأن الخطأ يتم التعامل معه داخل دالة login
+    } catch (error: any) {
+      console.error('خطأ غير متوقع في تسجيل الدخول:', error);
+      const errorMessage = language === 'en' 
+        ? 'An unexpected error occurred. Please try again.' 
+        : 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-  
-  // عرض رسالة تحميل أثناء التحقق من الجلسة
-  if (authLoading) {
-    return (
-      <Layout>
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-agri" />
-            <p>{language === 'en' ? 'Loading...' : 'جارٍ التحميل...'}</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-  
-  // إذا كان المستخدم مسجل دخوله بالفعل، فلا داعي لعرض نموذج تسجيل الدخول
-  if (isAuthenticated) {
-    return null;
-  }
-  
+
   return (
     <Layout>
-      <div className="min-h-screen py-12 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-md mx-auto">
-            <Card className="border-0 shadow-lg">
-              <CardHeader className="text-center pb-2">
-                <div className="w-16 h-16 bg-agri/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <LogIn className="h-8 w-8 text-agri" />
-                </div>
-                <CardTitle className="text-2xl">
-                  {language === 'en' ? 'Login to Your Account' : 'تسجيل الدخول إلى حسابك'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="flex items-center">
-                      <Mail className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                      {language === 'en' ? 'Email Address' : 'البريد الإلكتروني'}
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder={language === 'en' ? 'Enter your email' : 'أدخل بريدك الإلكتروني'}
-                      required
-                      className="bg-gray-50"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="password" className="flex items-center">
-                        <Lock className="h-4 w-4 mr-2 rtl:ml-2 rtl:mr-0" />
-                        {language === 'en' ? 'Password' : 'كلمة المرور'}
-                      </Label>
-                      <Link 
-                        to="/forgot-password" 
-                        className="text-sm text-agri hover:underline"
-                      >
-                        {language === 'en' ? 'Forgot Password?' : 'نسيت كلمة المرور؟'}
-                      </Link>
-                    </div>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder={language === 'en' ? 'Enter your password' : 'أدخل كلمة المرور'}
-                      required
-                      className="bg-gray-50"
-                    />
-                  </div>
+      <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-center">
+              {language === 'en' ? 'Sign In' : 'تسجيل الدخول'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="email">
+                  {language === 'en' ? 'Email' : 'البريد الإلكتروني'}
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={language === 'en' ? 'Enter your email' : 'أدخل بريدك الإلكتروني'}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="password">
+                  {language === 'en' ? 'Password' : 'كلمة المرور'}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={language === 'en' ? 'Enter your password' : 'أدخل كلمة المرور'}
+                    required
+                    disabled={loading}
+                  />
                   <Button
-                    type="submit"
-                    className="w-full bg-agri hover:bg-agri-dark flex items-center justify-center"
-                    disabled={isSubmitting}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                    disabled={loading}
                   >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        {language === 'en' ? 'Logging in...' : 'جاري تسجيل الدخول...'}
-                      </>
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
                     ) : (
-                      <>
-                        {language === 'en' ? 'Login' : 'تسجيل الدخول'}
-                        <ArrowRight className="ml-2 h-4 w-4 rtl:mr-2 rtl:ml-0" />
-                      </>
+                      <Eye className="h-4 w-4" />
                     )}
                   </Button>
-                </form>
-              </CardContent>
-              <CardFooter className="flex flex-col space-y-4 pt-0">
-                <div className="text-center text-sm">
-                  <span className="text-gray-600">
-                    {language === 'en' ? "Don't have an account? " : 'ليس لديك حساب؟ '}
-                  </span>
-                  <Link to="/signup" className="text-agri hover:underline flex items-center justify-center gap-1 inline-flex">
-                    <UserPlus className="h-3 w-3" />
-                    {language === 'en' ? 'Sign up' : 'إنشاء حساب'}
-                  </Link>
                 </div>
-                
-                <div className="text-center text-xs text-gray-500 bg-gray-50 p-3 rounded-md">
-                  <p>
-                    {language === 'en' 
-                      ? 'Login with your Supabase authentication credentials.' 
-                      : 'قم بتسجيل الدخول باستخدام بيانات اعتماد Supabase.'}
-                  </p>
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
-        </div>
+              </div>
+              
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading 
+                  ? (language === 'en' ? 'Signing in...' : 'جاري تسجيل الدخول...') 
+                  : (language === 'en' ? 'Sign In' : 'تسجيل الدخول')
+                }
+              </Button>
+            </form>
+            
+            <div className="mt-4 text-center">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-primary hover:underline"
+              >
+                {language === 'en' ? 'Forgot your password?' : 'هل نسيت كلمة المرور؟'}
+              </Link>
+            </div>
+            
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {language === 'en' ? "Don't have an account?" : 'ليس لديك حساب؟'}{' '}
+                <Link to="/signup" className="text-primary hover:underline font-medium">
+                  {language === 'en' ? 'Sign up' : 'إنشاء حساب'}
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );

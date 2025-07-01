@@ -6,7 +6,7 @@ import Layout from '@/components/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Package, Eye, Phone, MapPin, Calendar, Clock, User, FileText } from 'lucide-react';
+import { Package, Eye, Phone, MapPin, Calendar, Clock, User, FileText, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -14,6 +14,7 @@ interface OrderItem {
   id: string;
   quantity: number;
   price: number;
+  currency: string;
   product: {
     name: string;
     name_ar: string;
@@ -24,7 +25,10 @@ interface OrderItem {
 interface Order {
   id: string;
   total_amount: number;
+  currency: string;
   status: string;
+  payment_status: string;
+  payment_method: string;
   shipping_address: string;
   phone: string;
   notes: string;
@@ -60,6 +64,7 @@ const Orders = () => {
             id,
             quantity,
             price,
+            currency,
             products:product_id (
               name,
               name_ar,
@@ -83,6 +88,7 @@ const Orders = () => {
           id: item.id,
           quantity: item.quantity,
           price: item.price,
+          currency: item.currency || 'EGP',
           product: item.products
         }))
       })) || [];
@@ -118,6 +124,16 @@ const Orders = () => {
     return statusMap[status as keyof typeof statusMap] || status;
   };
 
+  const getPaymentStatusText = (status: string) => {
+    const statusMap = {
+      pending: language === 'en' ? 'Pending' : 'في الانتظار',
+      paid: language === 'en' ? 'Paid' : 'مدفوع',
+      failed: language === 'en' ? 'Failed' : 'فشل',
+      refunded: language === 'en' ? 'Refunded' : 'مُسترد'
+    };
+    return statusMap[status as keyof typeof statusMap] || status;
+  };
+
   const getStatusColor = (status: string) => {
     const colorMap = {
       pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
@@ -125,6 +141,16 @@ const Orders = () => {
       shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
       delivered: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
       cancelled: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+    };
+    return colorMap[status as keyof typeof colorMap] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    const colorMap = {
+      pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+      paid: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+      failed: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+      refunded: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300'
     };
     return colorMap[status as keyof typeof colorMap] || 'bg-gray-100 text-gray-800';
   };
@@ -204,6 +230,10 @@ const Orders = () => {
                       <Badge className={getStatusColor(order.status)}>
                         {getStatusText(order.status)}
                       </Badge>
+                      <Badge className={getPaymentStatusColor(order.payment_status)}>
+                        <CreditCard className="h-3 w-3 mr-1" />
+                        {getPaymentStatusText(order.payment_status)}
+                      </Badge>
                       <Button
                         variant="outline"
                         size="sm"
@@ -235,7 +265,7 @@ const Orders = () => {
                         {language === 'en' ? 'Total Amount' : 'المبلغ الإجمالي'}
                       </p>
                       <p className="text-lg font-semibold text-primary">
-                        {order.total_amount.toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                        {order.total_amount.toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
                       </p>
                     </div>
                     <div className="text-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -268,12 +298,12 @@ const Orders = () => {
                                   {language === 'en' ? 'Quantity:' : 'الكمية:'} {item.quantity} {item.product.unit}
                                 </p>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {language === 'en' ? 'Unit price:' : 'سعر الوحدة:'} {item.price.toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                                  {language === 'en' ? 'Unit price:' : 'سعر الوحدة:'} {item.price.toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
                                 </p>
                               </div>
                               <div className="text-right">
                                 <p className="font-semibold">
-                                  {(item.price * item.quantity).toFixed(2)} {language === 'en' ? 'SAR' : 'ريال'}
+                                  {(item.price * item.quantity).toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
                                 </p>
                               </div>
                             </div>

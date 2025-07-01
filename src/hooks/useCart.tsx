@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,7 @@ interface CartItem {
     price: number;
     images: string[];
     unit?: string;
+    currency?: string;
   };
 }
 
@@ -42,7 +42,8 @@ export const useCart = () => {
             name_ar,
             price,
             images,
-            unit
+            unit,
+            currency
           )
         `)
         .eq('user_id', user.id);
@@ -91,7 +92,8 @@ export const useCart = () => {
           .insert({
             user_id: user.id,
             product_id: productId,
-            quantity
+            quantity,
+            currency: 'EGP'
           });
 
         if (error) throw error;

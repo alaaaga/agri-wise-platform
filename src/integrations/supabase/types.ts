@@ -137,6 +137,7 @@ export type Database = {
       cart_items: {
         Row: {
           created_at: string
+          currency: string | null
           id: string
           product_id: string | null
           quantity: number
@@ -144,6 +145,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          currency?: string | null
           id?: string
           product_id?: string | null
           quantity?: number
@@ -151,6 +153,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          currency?: string | null
           id?: string
           product_id?: string | null
           quantity?: number
@@ -373,6 +376,7 @@ export type Database = {
       order_items: {
         Row: {
           created_at: string
+          currency: string | null
           id: string
           order_id: string | null
           price: number
@@ -381,6 +385,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          currency?: string | null
           id?: string
           order_id?: string | null
           price: number
@@ -389,6 +394,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          currency?: string | null
           id?: string
           order_id?: string | null
           price?: number
@@ -415,33 +421,45 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          currency: string | null
           id: string
           notes: string | null
+          payment_method: string | null
+          payment_status: string | null
           phone: string
           shipping_address: string
           status: string
+          stripe_session_id: string | null
           total_amount: number
           updated_at: string
           user_id: string | null
         }
         Insert: {
           created_at?: string
+          currency?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           phone: string
           shipping_address: string
           status?: string
+          stripe_session_id?: string | null
           total_amount: number
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           created_at?: string
+          currency?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           phone?: string
           shipping_address?: string
           status?: string
+          stripe_session_id?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string | null
@@ -460,6 +478,7 @@ export type Database = {
         Row: {
           category_id: string | null
           created_at: string
+          currency: string | null
           description: string | null
           description_ar: string | null
           id: string
@@ -476,6 +495,7 @@ export type Database = {
         Insert: {
           category_id?: string | null
           created_at?: string
+          currency?: string | null
           description?: string | null
           description_ar?: string | null
           id?: string
@@ -492,6 +512,7 @@ export type Database = {
         Update: {
           category_id?: string | null
           created_at?: string
+          currency?: string | null
           description?: string | null
           description_ar?: string | null
           id?: string
