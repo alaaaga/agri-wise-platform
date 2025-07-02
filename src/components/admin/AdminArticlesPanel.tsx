@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,6 +25,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import type { Database } from "@/integrations/supabase/types";
+
+type ContentStatus = Database['public']['Enums']['content_status'];
 
 interface Article {
   id: string;
@@ -33,7 +35,7 @@ interface Article {
   content: string;
   author_id?: string;
   category: string;
-  status?: string;
+  status?: ContentStatus;
   published_at?: string;
   author?: string;
   excerpt?: string;
