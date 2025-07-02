@@ -11,10 +11,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { FileText, Search, Edit, Trash, Loader2 } from 'lucide-react';
+import { FileText, Search, Edit, Trash, Loader2, Plus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import ArticleFormModal from './ArticleFormModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Article {
   id: string;
@@ -31,74 +42,58 @@ const AdminArticlesPanel = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<Article | null>(null);
   
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        setLoading(true);
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: articlesData, error: articlesError } = await supabase
+        .from('articles')
+        .select('id, title, author_id, category, status, published_at');
+      
+      if (articlesError) throw articlesError;
+      
+      const authorIds = articlesData
+        .filter(article => article.author_id)
+        .map(article => article.author_id);
+      
+      let authorNames: Record<string, string> = {};
+      
+      if (authorIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, last_name')
+          .in('id', authorIds);
         
-        // Fetch articles from Supabase
-        const { data: articlesData, error: articlesError } = await supabase
-          .from('articles')
-          .select('id, title, author_id, category, status, published_at');
-        
-        if (articlesError) throw articlesError;
-        
-        // Get author names for the articles
-        const authorIds = articlesData
-          .filter(article => article.author_id)
-          .map(article => article.author_id);
-        
-        let authorNames: Record<string, string> = {};
-        
-        if (authorIds.length > 0) {
-          const { data: profiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, last_name')
-            .in('id', authorIds);
-          
-          if (profilesError) {
-            console.error('Error fetching author profiles:', profilesError);
-          } else if (profiles) {
-            profiles.forEach(profile => {
-              // Use only last_name since first_name doesn't exist
-              authorNames[profile.id] = profile.last_name || 'Unknown';
-            });
-          }
+        if (!profilesError && profiles) {
+          profiles.forEach(profile => {
+            authorNames[profile.id] = profile.last_name || 'Unknown';
+          });
         }
-        
-        // Map the articles with author names
-        const articlesWithAuthors = articlesData.map(article => ({
-          ...article,
-          author: article.author_id ? authorNames[article.author_id] || 'Unknown' : 'Unknown',
-        }));
-        
-        setArticles(articlesWithAuthors);
-      } catch (err) {
-        console.error('Error fetching articles:', err);
-        setError(err instanceof Error ? err.message : 'فشل في جلب المقالات');
-        toast.error(language === 'en' ? 'Failed to fetch articles' : 'فشل في جلب المقالات');
-        
-        // Set fallback mock data if the fetch fails
-        const mockArticles = [
-          { id: '1', title: 'Modern Irrigation Techniques', author: 'Ahmed Mohamed', category: 'Irrigation', published_at: '2025-05-10', status: 'published' },
-          { id: '2', title: 'Organic Farming Best Practices', author: 'Fatima Ali', category: 'Organic', published_at: '2025-05-08', status: 'published' },
-          { id: '3', title: 'Pest Control for Citrus Trees', author: 'Mohammed Ibrahim', category: 'Pest Control', published_at: '2025-05-05', status: 'published' },
-          { id: '4', title: 'Sustainable Agriculture Methods', author: 'Sara Ahmed', category: 'Sustainability', published_at: '2025-05-02', status: 'draft' },
-          { id: '5', title: 'Water Conservation in Farming', author: 'Khalid Omar', category: 'Water Management', published_at: '2025-04-28', status: 'published' },
-        ];
-        
-        setArticles(mockArticles);
-      } finally {
-        setLoading(false);
       }
-    };
-    
+      
+      const articlesWithAuthors = articlesData.map(article => ({
+        ...article,
+        author: article.author_id ? authorNames[article.author_id] || 'Unknown' : 'Unknown',
+      }));
+      
+      setArticles(articlesWithAuthors);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+      toast.error(language === 'en' ? 'Failed to fetch articles' : 'فشل في جلب المقالات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchArticles();
   }, [language]);
   
-  // Filter articles based on search query
   const filteredArticles = articles.filter(article => 
     (article.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
     (article.author?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -106,126 +101,167 @@ const AdminArticlesPanel = () => {
   );
 
   const handleNewArticle = () => {
-    toast.info(
-      language === 'en' 
-        ? 'This feature will be implemented soon' 
-        : 'سيتم تنفيذ هذه الميزة قريبًا'
-    );
+    setSelectedArticle(null);
+    setFormModalOpen(true);
   };
 
-  const handleEditArticle = (articleId: string) => {
-    toast.info(
-      language === 'en' 
-        ? `Editing article ID: ${articleId}` 
-        : `تحرير المقال ذو المعرف: ${articleId}`
-    );
+  const handleEditArticle = (article: Article) => {
+    setSelectedArticle(article);
+    setFormModalOpen(true);
   };
 
-  const handleDeleteArticle = (articleId: string) => {
-    toast.info(
-      language === 'en' 
-        ? `Deleting article ID: ${articleId}` 
-        : `حذف المقال ذو المعرف: ${articleId}`
-    );
+  const handleDeleteArticle = (article: Article) => {
+    setArticleToDelete(article);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteArticle = async () => {
+    if (!articleToDelete) return;
+
+    try {
+      const { error } = await supabase.rpc('delete_article', {
+        article_id: articleToDelete.id
+      });
+
+      if (error) throw error;
+
+      toast.success(language === 'en' ? 'Article deleted successfully' : 'تم حذف المقال بنجاح');
+      fetchArticles();
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      toast.error(language === 'en' ? 'Error deleting article' : 'خطأ في حذف المقال');
+    } finally {
+      setDeleteDialogOpen(false);
+      setArticleToDelete(null);
+    }
   };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle>
-          {language === 'en' ? 'Manage Articles' : 'إدارة المقالات'}
-        </CardTitle>
-        <Button onClick={handleNewArticle}>
-          <FileText className="h-4 w-4 mr-2" />
-          {language === 'en' ? 'New Article' : 'مقال جديد'}
-        </Button>
-      </CardHeader>
-      
-      <CardContent>
-        <div className="flex items-center mb-6">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={language === 'en' ? 'Search articles...' : 'البحث عن مقالات...'}
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle>
+            {language === 'en' ? 'Manage Articles' : 'إدارة المقالات'}
+          </CardTitle>
+          <Button onClick={handleNewArticle}>
+            <Plus className="h-4 w-4 mr-2" />
+            {language === 'en' ? 'New Article' : 'مقال جديد'}
+          </Button>
+        </CardHeader>
         
-        {loading ? (
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">{language === 'en' ? 'Loading articles...' : 'جاري تحميل المقالات...'}</span>
+        <CardContent>
+          <div className="flex items-center mb-6">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={language === 'en' ? 'Search articles...' : 'البحث عن مقالات...'}
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
-        ) : error ? (
-          <div className="text-center py-8 text-destructive">
-            {language === 'en' ? 'Error: ' : 'خطأ: '}{error}
-          </div>
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{language === 'en' ? 'Title' : 'العنوان'}</TableHead>
-                  <TableHead>{language === 'en' ? 'Author' : 'الكاتب'}</TableHead>
-                  <TableHead>{language === 'en' ? 'Category' : 'التصنيف'}</TableHead>
-                  <TableHead>{language === 'en' ? 'Date' : 'التاريخ'}</TableHead>
-                  <TableHead>{language === 'en' ? 'Status' : 'الحالة'}</TableHead>
-                  <TableHead className="text-right">{language === 'en' ? 'Actions' : 'إجراءات'}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredArticles.length === 0 ? (
+          
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">{language === 'en' ? 'Loading articles...' : 'جاري تحميل المقالات...'}</span>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      {language === 'en' ? 'No articles found' : 'لم يتم العثور على مقالات'}
-                    </TableCell>
+                    <TableHead>{language === 'en' ? 'Title' : 'العنوان'}</TableHead>
+                    <TableHead>{language === 'en' ? 'Author' : 'الكاتب'}</TableHead>
+                    <TableHead>{language === 'en' ? 'Category' : 'التصنيف'}</TableHead>
+                    <TableHead>{language === 'en' ? 'Date' : 'التاريخ'}</TableHead>
+                    <TableHead>{language === 'en' ? 'Status' : 'الحالة'}</TableHead>
+                    <TableHead className="text-right">{language === 'en' ? 'Actions' : 'إجراءات'}</TableHead>
                   </TableRow>
-                ) : (
-                  filteredArticles.map((article) => (
-                    <TableRow key={article.id}>
-                      <TableCell className="font-medium">{article.title}</TableCell>
-                      <TableCell>{article.author}</TableCell>
-                      <TableCell>{article.category}</TableCell>
-                      <TableCell>{article.published_at}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded text-xs ${
-                          article.status === 'published' 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
-                        }`}>
-                          {article.status || 'draft'}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleEditArticle(article.id)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteArticle(article.id)}
-                          >
-                            <Trash className="h-4 w-4" />
-                          </Button>
-                        </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredArticles.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        {language === 'en' ? 'No articles found' : 'لم يتم العثور على مقالات'}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                  ) : (
+                    filteredArticles.map((article) => (
+                      <TableRow key={article.id}>
+                        <TableCell className="font-medium">{article.title}</TableCell>
+                        <TableCell>{article.author}</TableCell>
+                        <TableCell>{article.category}</TableCell>
+                        <TableCell>{article.published_at}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded text-xs ${
+                            article.status === 'published' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
+                          }`}>
+                            {article.status || 'draft'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleEditArticle(article)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDeleteArticle(article)}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <ArticleFormModal
+        open={formModalOpen}
+        onOpenChange={setFormModalOpen}
+        article={selectedArticle}
+        onSuccess={fetchArticles}
+      />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'en' ? 'Are you sure?' : 'هل أنت متأكد؟'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === 'en' 
+                ? 'This action cannot be undone. This will permanently delete the article.'
+                : 'لا يمكن التراجع عن هذا الإجراء. سيتم حذف المقال نهائياً.'
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {language === 'en' ? 'Cancel' : 'إلغاء'}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteArticle}>
+              {language === 'en' ? 'Delete' : 'حذف'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
