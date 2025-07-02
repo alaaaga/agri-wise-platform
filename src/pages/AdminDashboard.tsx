@@ -26,7 +26,8 @@ import {
   Database,
   RefreshCw,
   Shield,
-  Package
+  Package,
+  ShoppingCart
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -39,6 +40,7 @@ import AdminVideosPanel from '@/components/admin/AdminVideosPanel';
 import AdminCaseStudiesPanel from '@/components/admin/AdminCaseStudiesPanel';
 import AdminBookingsPanel from '@/components/admin/AdminBookingsPanel';
 import AdminOrdersPanel from '@/components/admin/AdminOrdersPanel';
+import AdminProductsPanel from '@/components/admin/AdminProductsPanel';
 import UserPermissionsPanel from '@/components/admin/UserPermissionsPanel';
 import { toast } from "@/components/ui/sonner";
 
@@ -62,7 +64,6 @@ const AdminDashboard = () => {
 
   const { stats: orderStats, fetchAdminStats } = useOrderManagement();
 
-  // تحقق من دور المسؤول عند تحميل الصفحة
   useEffect(() => {
     const verifyAdminRole = async () => {
       if (!isAuthenticated || !user) {
@@ -96,6 +97,7 @@ const AdminDashboard = () => {
       users: language === 'en' ? 'Users' : 'المستخدمين',
       bookings: language === 'en' ? 'Bookings' : 'الحجوزات',
       orders: language === 'en' ? 'Orders' : 'الطلبات',
+      products: language === 'en' ? 'Products' : 'المنتجات',
       permissions: language === 'en' ? 'Permissions' : 'الصلاحيات',
     };
     
@@ -103,6 +105,26 @@ const AdminDashboard = () => {
       ? `Viewing ${tabNames[value]} section` 
       : `عرض قسم ${tabNames[value]}`
     );
+  };
+
+  const handleQuickAction = (action: string) => {
+    const actionMessages: Record<string, string> = {
+      article: language === 'en' ? 'Switching to articles management...' : 'جاري التبديل إلى إدارة المقالات...',
+      video: language === 'en' ? 'Switching to videos management...' : 'جاري التبديل إلى إدارة الفيديوهات...',
+      case: language === 'en' ? 'Switching to case studies management...' : 'جاري التبديل إلى إدارة دراسات الحالة...',
+      orders: language === 'en' ? 'Switching to orders management...' : 'جاري التبديل إلى إدارة الطلبات...',
+      products: language === 'en' ? 'Switching to products management...' : 'جاري التبديل إلى إدارة المنتجات...'
+    };
+    
+    toast.success(actionMessages[action]);
+    setActiveTab(action === 'article' ? 'articles' : action === 'video' ? 'videos' : action === 'case' ? 'cases' : action);
+  };
+
+  const handleRefreshStats = async () => {
+    toast.info(language === 'en' ? 'Refreshing statistics...' : 'جاري تحديث الإحصائيات...');
+    await refreshStats();
+    await fetchAdminStats();
+    toast.success(language === 'en' ? 'Statistics updated!' : 'تم تحديث الإحصائيات!');
   };
 
   // عرض شاشة التحميل
@@ -168,28 +190,9 @@ const AdminDashboard = () => {
       count: orderStats?.total_products || getStatValue('pending_bookings'), 
       label: language === 'en' ? 'Total Products' : 'إجمالي المنتجات', 
       color: 'bg-purple-100 dark:bg-purple-900', 
-      icon: Package 
+      icon: ShoppingCart 
     }
   ];
-
-  const handleQuickAction = (action: string) => {
-    const actionMessages: Record<string, string> = {
-      article: language === 'en' ? 'Switching to articles management...' : 'جاري التبديل إلى إدارة المقالات...',
-      video: language === 'en' ? 'Switching to videos management...' : 'جاري التبديل إلى إدارة الفيديوهات...',
-      case: language === 'en' ? 'Switching to case studies management...' : 'جاري التبديل إلى إدارة دراسات الحالة...',
-      orders: language === 'en' ? 'Switching to orders management...' : 'جاري التبديل إلى إدارة الطلبات...'
-    };
-    
-    toast.success(actionMessages[action]);
-    setActiveTab(action === 'article' ? 'articles' : action === 'video' ? 'videos' : action === 'case' ? 'cases' : 'orders');
-  };
-
-  const handleRefreshStats = async () => {
-    toast.info(language === 'en' ? 'Refreshing statistics...' : 'جاري تحديث الإحصائيات...');
-    await refreshStats();
-    await fetchAdminStats();
-    toast.success(language === 'en' ? 'Statistics updated!' : 'تم تحديث الإحصائيات!');
-  };
 
   return (
     <Layout>
@@ -222,6 +225,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <LayoutDashboard className="h-4 w-4" />
               <span>{language === 'en' ? 'Overview' : 'نظرة عامة'}</span>
+            </TabsTrigger>
+            <TabsTrigger value="products" className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              <span>{language === 'en' ? 'Products' : 'المنتجات'}</span>
             </TabsTrigger>
             <TabsTrigger value="orders" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
@@ -312,6 +319,10 @@ const AdminDashboard = () => {
                         {language === 'en' ? 'Quick Actions' : 'إجراءات سريعة'}
                       </h3>
                       <div className="flex flex-col gap-3">
+                        <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('products')}>
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                          {language === 'en' ? 'Manage Products' : 'إدارة المنتجات'}
+                        </Button>
                         <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('orders')}>
                           <Package className="mr-2 h-4 w-4" />
                           {language === 'en' ? 'Manage Orders' : 'إدارة الطلبات'}
@@ -334,6 +345,10 @@ const AdminDashboard = () => {
                 </div>
               </>
             )}
+          </TabsContent>
+
+          <TabsContent value="products">
+            <AdminProductsPanel />
           </TabsContent>
 
           <TabsContent value="orders">
