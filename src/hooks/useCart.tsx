@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -65,6 +66,7 @@ export const useCart = () => {
       setCartItems(formattedItems);
     } catch (error) {
       console.error('Error fetching cart items:', error);
+      toast.error('خطأ في تحميل السلة');
     } finally {
       setLoading(false);
     }
@@ -73,21 +75,39 @@ export const useCart = () => {
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) {
       toast.error('يرجى تسجيل الدخول لإضافة المنتجات للسلة');
-      return;
+      return false;
     }
 
     try {
-      const existingItem = cartItems.find(item => item.product_id === productId);
-      
-      if (existingItem) {
-        const { error } = await supabase
+      console.log('إضافة منتج للسلة:', { productId, quantity, userId: user.id });
+
+      // Check if item already exists in cart
+      const { data: existingItems, error: fetchError } = await supabase
+        .from('cart_items')
+        .select('id, quantity')
+        .eq('user_id', user.id)
+        .eq('product_id', productId);
+
+      if (fetchError) {
+        console.error('خطأ في التحقق من السلة:', fetchError);
+        throw fetchError;
+      }
+
+      if (existingItems && existingItems.length > 0) {
+        // Update existing item
+        const existingItem = existingItems[0];
+        const { error: updateError } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + quantity })
           .eq('id', existingItem.id);
 
-        if (error) throw error;
+        if (updateError) {
+          console.error('خطأ في تحديث السلة:', updateError);
+          throw updateError;
+        }
       } else {
-        const { error } = await supabase
+        // Insert new item
+        const { error: insertError } = await supabase
           .from('cart_items')
           .insert({
             user_id: user.id,
@@ -96,14 +116,19 @@ export const useCart = () => {
             currency: 'EGP'
           });
 
-        if (error) throw error;
+        if (insertError) {
+          console.error('خطأ في إضافة للسلة:', insertError);
+          throw insertError;
+        }
       }
 
       await fetchCartItems();
-      toast.success('تم إضافة المنتج للسلة');
+      toast.success('تم إضافة المنتج للسلة بنجاح');
+      return true;
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast.error('خطأ في إضافة المنتج للسلة');
+      return false;
     }
   };
 

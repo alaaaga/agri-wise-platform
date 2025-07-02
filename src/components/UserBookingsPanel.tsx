@@ -4,239 +4,242 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CalendarCheck, Clock, User, FileText, Plus, Loader2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { CalendarDays, Clock, User, FileText, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 
 interface Booking {
   id: string;
   service_type: string;
+  title: string;
+  description: string;
   booking_date: string;
   booking_time: string;
+  duration: number;
   status: string;
-  notes?: string;
+  price: number;
+  notes: string;
   created_at: string;
+  consultant: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null;
 }
 
 const UserBookingsPanel = () => {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const { language } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const fetchBookings = async () => {
     if (!user) return;
-
+    
     try {
-      setLoading(true);
       console.log('جاري جلب الحجوزات للمستخدم:', user.id);
       
-      // استعلام الحجوزات باستخدام السياسات الجديدة
       const { data, error } = await supabase
         .from('bookings')
-        .select('*')
+        .select(`
+          *,
+          profiles!consultant_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('client_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching bookings:', error);
-        toast.error(language === 'en' ? 'Error loading bookings' : 'خطأ في تحميل الحجوزات');
-        return;
+        console.error('خطأ في جلب الحجوزات:', error);
+        throw error;
       }
 
       console.log('تم جلب الحجوزات بنجاح:', data);
-      setBookings(data || []);
+      
+      const formattedBookings = data?.map(booking => ({
+        ...booking,
+        consultant: booking.profiles
+      })) || [];
+
+      setBookings(formattedBookings);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast.error(language === 'en' ? 'Error loading bookings' : 'خطأ في تحميل الحجوزات');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const refreshBookings = async () => {
-    setRefreshing(true);
-    await fetchBookings();
-    setRefreshing(false);
-    toast.success(language === 'en' ? 'Bookings refreshed' : 'تم تحديث الحجوزات');
-  };
-
-  const cancelBooking = async (bookingId: string) => {
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('id', bookingId);
-
-      if (error) {
-        console.error('Error cancelling booking:', error);
-        toast.error(language === 'en' ? 'Error cancelling booking' : 'خطأ في إلغاء الحجز');
-        return;
-      }
-
-      await fetchBookings();
-      toast.success(language === 'en' ? 'Booking cancelled successfully' : 'تم إلغاء الحجز بنجاح');
-    } catch (error) {
-      console.error('Error cancelling booking:', error);
-      toast.error(language === 'en' ? 'Error cancelling booking' : 'خطأ في إلغاء الحجز');
     }
   };
 
   useEffect(() => {
-    fetchBookings();
+    if (user) {
+      fetchBookings();
+    }
   }, [user]);
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      pending: { 
-        color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-        text: language === 'en' ? 'Pending' : 'معلق'
-      },
-      confirmed: { 
-        color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-        text: language === 'en' ? 'Confirmed' : 'مؤكد'
-      },
-      completed: { 
-        color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-        text: language === 'en' ? 'Completed' : 'مكتمل'
-      },
-      cancelled: { 
-        color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-        text: language === 'en' ? 'Cancelled' : 'ملغي'
-      }
-    };
+  useEffect(() => {
+    setLoading(false);
+  }, [bookings]);
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
-    
-    return (
-      <Badge className={config.color}>
-        {config.text}
-      </Badge>
-    );
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'confirmed': return 'bg-green-100 text-green-800';
+      case 'completed': return 'bg-blue-100 text-blue-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    const statusMap = {
+      pending: language === 'en' ? 'Pending' : 'في الانتظار',
+      confirmed: language === 'en' ? 'Confirmed' : 'مؤكد',
+      completed: language === 'en' ? 'Completed' : 'مكتمل',
+      cancelled: language === 'en' ? 'Cancelled' : 'ملغي'
+    };
+    return statusMap[status as keyof typeof statusMap] || status;
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : 'ar-EG');
+    return new Date(dateString).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US');
   };
 
   const formatTime = (timeString: string) => {
-    return timeString.substring(0, 5);
+    return timeString.slice(0, 5); // Format HH:MM
   };
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarCheck className="h-5 w-5" />
-            {language === 'en' ? 'My Bookings' : 'حجوزاتي'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center items-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2">
-              {language === 'en' ? 'Loading bookings...' : 'جاري تحميل الحجوزات...'}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center items-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">
+          {language === 'en' ? 'Loading bookings...' : 'جاري تحميل الحجوزات...'}
+        </span>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="flex items-center gap-2">
-            <CalendarCheck className="h-5 w-5" />
-            {isAdmin 
-              ? (language === 'en' ? 'All Bookings' : 'جميع الحجوزات')
-              : (language === 'en' ? 'My Bookings' : 'حجوزاتي')
-            }
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={refreshBookings}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              {language === 'en' ? 'Refresh' : 'تحديث'}
-            </Button>
-            <Button variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              {language === 'en' ? 'New Booking' : 'حجز جديد'}
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {bookings.length === 0 ? (
-          <div className="text-center py-8">
-            <CalendarCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">
+          {language === 'en' ? 'My Bookings' : 'حجوزاتي'}
+        </h2>
+        <Button onClick={fetchBookings} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          {language === 'en' ? 'Refresh' : 'تحديث'}
+        </Button>
+      </div>
+
+      {bookings.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-8">
+            <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">
+              {language === 'en' ? 'No bookings yet' : 'لا توجد حجوزات بعد'}
+            </h3>
             <p className="text-muted-foreground">
-              {language === 'en' ? 'No bookings found' : 'لا توجد حجوزات'}
+              {language === 'en' 
+                ? 'Your consultation bookings will appear here' 
+                : 'ستظهر حجوزات الاستشارات الخاصة بك هنا'
+              }
             </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {bookings.map((booking) => (
-              <div
-                key={booking.id}
-                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{booking.service_type}</h3>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                      <span className="flex items-center gap-1">
-                        <CalendarCheck className="h-4 w-4" />
-                        {formatDate(booking.booking_date)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {formatTime(booking.booking_time)}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6">
+          {bookings.map((booking) => (
+            <Card key={booking.id}>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{booking.title}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {booking.service_type}
+                    </p>
+                  </div>
+                  <Badge className={getStatusColor(booking.status)}>
+                    {getStatusText(booking.status)}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {language === 'en' ? 'Date:' : 'التاريخ:'} {formatDate(booking.booking_date)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {language === 'en' ? 'Time:' : 'الوقت:'} {formatTime(booking.booking_time)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {language === 'en' ? 'Duration:' : 'المدة:'} {booking.duration} {language === 'en' ? 'minutes' : 'دقيقة'}
+                    </span>
+                  </div>
+                  {booking.price && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">
+                        {language === 'en' ? 'Price:' : 'السعر:'} {booking.price} {language === 'en' ? 'EGP' : 'جنيه'}
                       </span>
                     </div>
-                  </div>
-                  {getStatusBadge(booking.status)}
+                  )}
                 </div>
-                
-                {booking.notes && (
-                  <div className="flex items-start gap-2 text-sm mb-3">
-                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <p className="text-muted-foreground">{booking.notes}</p>
+
+                {booking.consultant && (
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {language === 'en' ? 'Consultant:' : 'المستشار:'} {booking.consultant.first_name} {booking.consultant.last_name}
+                    </span>
                   </div>
                 )}
-                
-                <div className="flex justify-between items-center pt-3 border-t">
-                  <span className="text-sm text-muted-foreground">
-                    {language === 'en' ? 'Booked on' : 'تم الحجز في'}: {formatDate(booking.created_at)}
-                  </span>
-                  <div className="flex gap-2">
-                    {booking.status === 'pending' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => cancelBooking(booking.id)}
-                      >
-                        {language === 'en' ? 'Cancel' : 'إلغاء'}
-                      </Button>
-                    )}
-                    <Button variant="outline" size="sm">
-                      {language === 'en' ? 'View Details' : 'عرض التفاصيل'}
-                    </Button>
+
+                {booking.description && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">
+                        {language === 'en' ? 'Description:' : 'الوصف:'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
+                      {booking.description}
+                    </p>
                   </div>
+                )}
+
+                {booking.notes && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">
+                        {language === 'en' ? 'Notes:' : 'ملاحظات:'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
+                      {booking.notes}
+                    </p>
+                  </div>
+                )}
+
+                <div className="text-xs text-muted-foreground">
+                  {language === 'en' ? 'Booked on:' : 'تم الحجز في:'} {formatDate(booking.created_at)}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 

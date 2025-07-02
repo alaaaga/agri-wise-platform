@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/sonner';
-import { Package, Eye, Edit, RefreshCw, Loader2 } from 'lucide-react';
+import { Package, Edit, RefreshCw, Loader2 } from 'lucide-react';
 
 interface OrderItem {
   id: string;
@@ -23,7 +23,7 @@ interface OrderItem {
     name: string;
     name_ar: string;
     unit: string;
-  };
+  } | null;
 }
 
 interface Order {
@@ -47,7 +47,7 @@ interface Order {
     first_name: string;
     last_name: string;
     email: string;
-  };
+  } | null;
 }
 
 const AdminOrdersPanel = () => {
@@ -58,7 +58,6 @@ const AdminOrdersPanel = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // نموذج تحديث الطلب
   const [updateForm, setUpdateForm] = useState({
     status: '',
     admin_notes: '',
@@ -101,7 +100,6 @@ const AdminOrdersPanel = () => {
 
       console.log('تم جلب الطلبات بنجاح:', data);
       
-      // تحويل البيانات للشكل المطلوب
       const formattedOrders = data?.map(order => ({
         ...order,
         order_items: order.order_items?.map(item => ({
@@ -278,8 +276,10 @@ const AdminOrdersPanel = () => {
                       {order.order_items.map((item) => (
                         <div key={item.id} className="flex justify-between items-center bg-muted p-2 rounded text-sm">
                           <span>
-                            {language === 'en' ? item.product?.name : item.product?.name_ar} 
-                            x {item.quantity} {item.product?.unit}
+                            {item.product ? (
+                              language === 'en' ? item.product.name : item.product.name_ar
+                            ) : 'Unknown Product'} 
+                            x {item.quantity} {item.product?.unit || 'unit'}
                           </span>
                           <span className="font-medium">
                             {item.price} {item.currency || 'EGP'}

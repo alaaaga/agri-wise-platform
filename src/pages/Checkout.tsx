@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,45 +54,59 @@ const Checkout = () => {
         formData 
       });
 
-      const orderData = {
-        items: cartItems.map(item => ({
-          product_id: item.product_id,
-          name: language === 'en' ? item.product.name : item.product.name_ar,
-          description: item.product.unit || 'وحدة',
-          price: item.product.price,
-          quantity: item.quantity
-        })),
-        total: getCartTotal(),
-        shipping_address: formData.shipping_address.trim(),
-        phone: formData.phone.trim(),
-        notes: formData.notes.trim() || null
-      };
+      // Create order first
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user.id,
+          total_amount: getCartTotal(),
+          currency: 'EGP',
+          status: 'pending',
+          payment_status: 'pending',
+          shipping_address: formData.shipping_address.trim(),
+          phone: formData.phone.trim(),
+          notes: formData.notes.trim() || null
+        })
+        .select()
+        .single();
 
-      console.log('إرسال بيانات الطلب:', orderData);
-
-      const { data, error } = await supabase.functions.invoke('create-payment-session', {
-        body: { orderData }
-      });
-
-      if (error) {
-        console.error('خطأ في إنشاء جلسة الدفع:', error);
-        throw error;
+      if (orderError) {
+        console.error('خطأ في إنشاء الطلب:', orderError);
+        throw orderError;
       }
 
-      console.log('تم إنشاء جلسة الدفع بنجاح:', data);
+      console.log('تم إنشاء الطلب بنجاح:', orderData);
 
-      if (data.url) {
-        // Clear cart before redirecting to payment
-        await clearCart();
-        // Redirect to Stripe Checkout
-        window.location.href = data.url;
-      } else {
-        throw new Error('No payment URL received');
+      // Create order items
+      const orderItems = cartItems.map(item => ({
+        order_id: orderData.id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: item.product.price,
+        currency: 'EGP'
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) {
+        console.error('خطأ في إنشاء عناصر الطلب:', itemsError);
+        throw itemsError;
       }
+
+      console.log('تم إنشاء عناصر الطلب بنجاح');
+
+      // Clear cart after successful order creation
+      await clearCart();
+
+      // Show success message and redirect
+      toast.success(language === 'en' ? 'Order created successfully!' : 'تم إنشاء الطلب بنجاح!');
+      navigate('/orders');
 
     } catch (error) {
       console.error('خطأ في عملية الدفع:', error);
-      toast.error(language === 'en' ? 'Payment failed. Please try again.' : 'فشلت عملية الدفع. يرجى المحاولة مرة أخرى.');
+      toast.error(language === 'en' ? 'Failed to create order. Please try again.' : 'فشل في إنشاء الطلب. يرجى المحاولة مرة أخرى.');
     } finally {
       setFormLoading(false);
     }
@@ -213,7 +226,7 @@ const Checkout = () => {
                   <CreditCard className="h-4 w-4 mr-2" />
                   {formLoading 
                     ? (language === 'en' ? 'Processing...' : 'جاري المعالجة...')
-                    : (language === 'en' ? 'Pay Now' : 'ادفع الآن')
+                    : (language === 'en' ? 'Place Order' : 'إتمام الطلب')
                   }
                 </Button>
               </form>
@@ -252,8 +265,8 @@ const Checkout = () => {
                 <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}</span>
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                <p>{language === 'en' ? 'Secure payment with Stripe' : 'دفع آمن مع سترايب'}</p>
-                <p>{language === 'en' ? 'Your payment information is encrypted and secure' : 'معلومات الدفع الخاصة بك مشفرة وآمنة'}</p>
+                <p>{language === 'en' ? 'Cash on delivery available' : 'الدفع عند الاستلام متاح'}</p>
+                <p>{language === 'en' ? 'Your order will be processed after confirmation' : 'سيتم معالجة طلبك بعد التأكيد'}</p>
               </div>
             </CardContent>
           </Card>
