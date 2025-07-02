@@ -27,7 +27,8 @@ import {
   RefreshCw,
   Shield,
   Package,
-  ShoppingCart
+  ShoppingCart,
+  UserCheck
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -41,6 +42,7 @@ import AdminCaseStudiesPanel from '@/components/admin/AdminCaseStudiesPanel';
 import AdminBookingsPanel from '@/components/admin/AdminBookingsPanel';
 import AdminOrdersPanel from '@/components/admin/AdminOrdersPanel';
 import AdminProductsPanel from '@/components/admin/AdminProductsPanel';
+import AdminConsultantsPanel from '@/components/admin/AdminConsultantsPanel';
 import UserPermissionsPanel from '@/components/admin/UserPermissionsPanel';
 import { toast } from "@/components/ui/sonner";
 
@@ -95,6 +97,7 @@ const AdminDashboard = () => {
       videos: language === 'en' ? 'Videos' : 'الفيديوهات',
       cases: language === 'en' ? 'Case Studies' : 'دراسات الحالة',
       users: language === 'en' ? 'Users' : 'المستخدمين',
+      consultants: language === 'en' ? 'Consultants' : 'المستشارين',
       bookings: language === 'en' ? 'Bookings' : 'الحجوزات',
       orders: language === 'en' ? 'Orders' : 'الطلبات',
       products: language === 'en' ? 'Products' : 'المنتجات',
@@ -113,7 +116,8 @@ const AdminDashboard = () => {
       video: language === 'en' ? 'Switching to videos management...' : 'جاري التبديل إلى إدارة الفيديوهات...',
       case: language === 'en' ? 'Switching to case studies management...' : 'جاري التبديل إلى إدارة دراسات الحالة...',
       orders: language === 'en' ? 'Switching to orders management...' : 'جاري التبديل إلى إدارة الطلبات...',
-      products: language === 'en' ? 'Switching to products management...' : 'جاري التبديل إلى إدارة المنتجات...'
+      products: language === 'en' ? 'Switching to products management...' : 'جاري التبديل إلى إدارة المنتجات...',
+      consultants: language === 'en' ? 'Switching to consultants management...' : 'جاري التبديل إلى إدارة المستشارين...'
     };
     
     toast.success(actionMessages[action]);
@@ -234,6 +238,10 @@ const AdminDashboard = () => {
               <Package className="h-4 w-4" />
               <span>{language === 'en' ? 'Orders' : 'الطلبات'}</span>
             </TabsTrigger>
+            <TabsTrigger value="consultants" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              <span>{language === 'en' ? 'Consultants' : 'المستشارين'}</span>
+            </TabsTrigger>
             <TabsTrigger value="articles" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               <span>{language === 'en' ? 'Articles' : 'المقالات'}</span>
@@ -319,6 +327,10 @@ const AdminDashboard = () => {
                         {language === 'en' ? 'Quick Actions' : 'إجراءات سريعة'}
                       </h3>
                       <div className="flex flex-col gap-3">
+                        <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('consultants')}>
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          {language === 'en' ? 'Manage Consultants' : 'إدارة المستشارين'}
+                        </Button>
                         <Button variant="outline" className="justify-start" onClick={() => handleQuickAction('products')}>
                           <ShoppingCart className="mr-2 h-4 w-4" />
                           {language === 'en' ? 'Manage Products' : 'إدارة المنتجات'}
@@ -353,6 +365,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="orders">
             <AdminOrdersPanel />
+          </TabsContent>
+
+          <TabsContent value="consultants">
+            <AdminConsultantsPanel />
           </TabsContent>
 
           <TabsContent value="articles">

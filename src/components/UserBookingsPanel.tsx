@@ -21,6 +21,8 @@ interface Booking {
   price: number;
   notes: string;
   created_at: string;
+  client_id: string;
+  consultant_id: string;
   consultant: {
     first_name: string;
     last_name: string;
@@ -35,7 +37,11 @@ const UserBookingsPanel = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchBookings = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('لا يوجد مستخدم مسجل دخول');
+      setLoading(false);
+      return;
+    }
     
     try {
       console.log('جاري جلب الحجوزات للمستخدم:', user.id);
@@ -43,7 +49,19 @@ const UserBookingsPanel = () => {
       const { data, error } = await supabase
         .from('bookings')
         .select(`
-          *,
+          id,
+          service_type,
+          title,
+          description,
+          booking_date,
+          booking_time,
+          duration,
+          status,
+          price,
+          notes,
+          created_at,
+          client_id,
+          consultant_id,
           profiles!consultant_id (
             first_name,
             last_name,
@@ -58,24 +76,32 @@ const UserBookingsPanel = () => {
         throw error;
       }
 
-      console.log('تم جلب الحجوزات بنجاح:', data);
+      console.log('البيانات المستلمة من قاعدة البيانات:', data);
       
-      const formattedBookings = data?.map(booking => ({
-        ...booking,
-        consultant: booking.profiles
-      })) || [];
+      if (!data || data.length === 0) {
+        console.log('لا توجد حجوزات للمستخدم');
+        setBookings([]);
+        return;
+      }
 
+      const formattedBookings = data.map(booking => ({
+        ...booking,
+        consultant: booking.profiles || null
+      }));
+
+      console.log('تم تنسيق الحجوزات:', formattedBookings);
       setBookings(formattedBookings);
     } catch (error) {
-      console.error('Error fetching bookings:', error);
+      console.error('خطأ في جلب الحجوزات:', error);
       toast.error(language === 'en' ? 'Error loading bookings' : 'خطأ في تحميل الحجوزات');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (user) {
-      fetchBookings();
-    }
+    console.log('تحديث الحجوزات - المستخدم:', user?.id);
+    fetchBookings();
   }, [user]);
 
   useEffect(() => {
@@ -107,7 +133,7 @@ const UserBookingsPanel = () => {
   };
 
   const formatTime = (timeString: string) => {
-    return timeString.slice(0, 5); // Format HH:MM
+    return timeString.slice(0, 5);
   };
 
   if (loading) {
