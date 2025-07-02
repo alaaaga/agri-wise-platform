@@ -18,14 +18,14 @@ import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import BookingFormModal from './BookingFormModal';
 
-interface Booking {
+interface AdminBooking {
   id: string;
   client: string;
   consultant: string;
   service_type: string;
   booking_date: string;
   booking_time: string;
-  status: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   title: string;
   description?: string;
   price?: number;
@@ -35,11 +35,11 @@ interface Booking {
 const AdminBookingsPanel = () => {
   const { language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [formModalOpen, setFormModalOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
 
   const fetchBookings = async () => {
     try {
@@ -63,7 +63,7 @@ const AdminBookingsPanel = () => {
         service_type: booking.service_type,
         booking_date: booking.booking_date,
         booking_time: booking.booking_time,
-        status: booking.status,
+        status: booking.status as 'pending' | 'confirmed' | 'cancelled' | 'completed',
         title: booking.title,
         description: booking.description,
         price: booking.price,
@@ -148,7 +148,7 @@ const AdminBookingsPanel = () => {
     setFormModalOpen(true);
   };
 
-  const handleEditBooking = (booking: Booking) => {
+  const handleEditBooking = (booking: AdminBooking) => {
     setSelectedBooking(booking);
     setFormModalOpen(true);
   };
