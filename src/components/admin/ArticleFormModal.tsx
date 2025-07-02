@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -16,6 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type ContentStatus = Database['public']['Enums']['content_status'];
 
 interface Article {
   id?: string;
@@ -24,7 +26,7 @@ interface Article {
   category: string;
   excerpt?: string;
   image_url?: string;
-  status?: string;
+  status?: ContentStatus;
 }
 
 interface ArticleFormModalProps {
@@ -43,7 +45,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
     category: '',
     excerpt: '',
     image_url: '',
-    status: 'published'
+    status: 'published' as ContentStatus
   });
 
   useEffect(() => {
@@ -56,7 +58,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
         category: '',
         excerpt: '',
         image_url: '',
-        status: 'published'
+        status: 'published' as ContentStatus
       });
     }
   }, [article, open]);
@@ -73,6 +75,14 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
     }
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error(language === 'en' ? 'You must be logged in' : 'يجب تسجيل الدخول أولاً');
+        setLoading(false);
+        return;
+      }
+
       if (article?.id) {
         // تحديث مقال موجود
         const { error } = await supabase
@@ -83,7 +93,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
             category: formData.category,
             excerpt: formData.excerpt || null,
             image_url: formData.image_url || null,
-            status: formData.status || 'published',
+            status: formData.status as ContentStatus || 'published' as ContentStatus,
             updated_at: new Date().toISOString()
           })
           .eq('id', article.id);
@@ -100,8 +110,8 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
             category: formData.category,
             excerpt: formData.excerpt || null,
             image_url: formData.image_url || null,
-            status: 'published',
-            author_id: (await supabase.auth.getUser()).data.user?.id,
+            status: 'published' as ContentStatus,
+            author_id: user.id,
             published_at: new Date().toISOString()
           });
 
@@ -146,7 +156,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="title" className="text-sm font-medium">
-              {language === 'en' ? 'Title' : 'العنوان'} *
+              {language === 'en' ? 'Title' : 'العنوان'} <span className="text-red-500">*</span>
             </Label>
             <Input
               id="title"
@@ -160,7 +170,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
 
           <div>
             <Label htmlFor="category" className="text-sm font-medium">
-              {language === 'en' ? 'Category' : 'التصنيف'} *
+              {language === 'en' ? 'Category' : 'التصنيف'} <span className="text-red-500">*</span>
             </Label>
             <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
               <SelectTrigger className="mt-1">
@@ -206,7 +216,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
 
           <div>
             <Label htmlFor="content" className="text-sm font-medium">
-              {language === 'en' ? 'Content' : 'المحتوى'} *
+              {language === 'en' ? 'Content' : 'المحتوى'} <span className="text-red-500">*</span>
             </Label>
             <Textarea
               id="content"
@@ -223,7 +233,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
             <Label htmlFor="status" className="text-sm font-medium">
               {language === 'en' ? 'Status' : 'الحالة'}
             </Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+            <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value as ContentStatus})}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
