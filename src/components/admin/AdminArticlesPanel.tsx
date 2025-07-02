@@ -56,33 +56,47 @@ const AdminArticlesPanel = () => {
       
       const { data: articlesData, error: articlesError } = await supabase
         .from('articles')
-        .select('id, title, content, author_id, category, status, published_at, excerpt, image_url');
+        .select(`
+          id, 
+          title, 
+          content, 
+          author_id, 
+          category, 
+          status, 
+          published_at, 
+          excerpt, 
+          image_url,
+          created_at
+        `)
+        .order('created_at', { ascending: false });
       
       if (articlesError) throw articlesError;
       
+      // الحصول على أسماء المؤلفين
       const authorIds = articlesData
-        .filter(article => article.author_id)
-        .map(article => article.author_id);
+        ?.filter(article => article.author_id)
+        .map(article => article.author_id) || [];
       
       let authorNames: Record<string, string> = {};
       
       if (authorIds.length > 0) {
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, last_name')
+          .select('id, first_name, last_name')
           .in('id', authorIds);
         
         if (!profilesError && profiles) {
           profiles.forEach(profile => {
-            authorNames[profile.id] = profile.last_name || 'Unknown';
+            const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
+            authorNames[profile.id] = fullName || 'مستخدم غير محدد';
           });
         }
       }
       
-      const articlesWithAuthors = articlesData.map(article => ({
+      const articlesWithAuthors = articlesData?.map(article => ({
         ...article,
-        author: article.author_id ? authorNames[article.author_id] || 'Unknown' : 'Unknown',
-      }));
+        author: article.author_id ? authorNames[article.author_id] || 'مستخدم غير محدد' : 'مستخدم غير محدد',
+      })) || [];
       
       setArticles(articlesWithAuthors);
     } catch (err) {
@@ -95,7 +109,7 @@ const AdminArticlesPanel = () => {
 
   useEffect(() => {
     fetchArticles();
-  }, [language]);
+  }, []);
   
   const filteredArticles = articles.filter(article => 
     (article.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) || 
@@ -122,9 +136,10 @@ const AdminArticlesPanel = () => {
     if (!articleToDelete) return;
 
     try {
-      const { error } = await supabase.rpc('delete_article', {
-        article_id: articleToDelete.id
-      });
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', articleToDelete.id);
 
       if (error) throw error;
 
@@ -139,11 +154,33 @@ const AdminArticlesPanel = () => {
     }
   };
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return language === 'en' ? 'Not published' : 'غير منشور';
+    return new Date(dateString).toLocaleDateString(language === 'en' ? 'en-US' : 'ar-EG');
+  };
+
+  const getCategoryName = (category: string) => {
+    const categories: Record<string, { en: string; ar: string }> = {
+      'irrigation': { en: 'Irrigation', ar: 'الري' },
+      'organic': { en: 'Organic Farming', ar: 'الزراعة العضوية' },
+      'pest-control': { en: 'Pest Control', ar: 'مكافحة الآفات' },
+      'sustainability': { en: 'Sustainability', ar: 'الاستدامة' },
+      'water-management': { en: 'Water Management', ar: 'إدارة المياه' },
+      'crops': { en: 'Crops', ar: 'المحاصيل' },
+      'livestock': { en: 'Livestock', ar: 'الثروة الحيوانية' },
+      'soil': { en: 'Soil Analysis', ar: 'تحليل التربة' },
+      'technology': { en: 'Agricultural Technology', ar: 'التكنولوجيا الزراعية' }
+    };
+    
+    return categories[category]?.[language as 'en' | 'ar'] || category;
+  };
+
   return (
     <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
             {language === 'en' ? 'Manage Articles' : 'إدارة المقالات'}
           </CardTitle>
           <Button onClick={handleNewArticle}>
@@ -155,10 +192,10 @@ const AdminArticlesPanel = () => {
         <CardContent>
           <div className="flex items-center mb-6">
             <div className="relative w-full max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground rtl:right-2.5 rtl:left-auto" />
               <Input
                 placeholder={language === 'en' ? 'Search articles...' : 'البحث عن مقالات...'}
-                className="pl-8"
+                className="pl-8 rtl:pr-8 rtl:pl-3"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -193,17 +230,22 @@ const AdminArticlesPanel = () => {
                   ) : (
                     filteredArticles.map((article) => (
                       <TableRow key={article.id}>
-                        <TableCell className="font-medium">{article.title}</TableCell>
+                        <TableCell className="font-medium max-w-xs truncate">
+                          {article.title}
+                        </TableCell>
                         <TableCell>{article.author}</TableCell>
-                        <TableCell>{article.category}</TableCell>
-                        <TableCell>{article.published_at}</TableCell>
+                        <TableCell>{getCategoryName(article.category)}</TableCell>
+                        <TableCell>{formatDate(article.published_at)}</TableCell>
                         <TableCell>
-                          <span className={`px-2 py-1 rounded text-xs ${
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
                             article.status === 'published' 
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
                               : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
                           }`}>
-                            {article.status || 'draft'}
+                            {article.status === 'published' 
+                              ? (language === 'en' ? 'Published' : 'منشور')
+                              : (language === 'en' ? 'Draft' : 'مسودة')
+                            }
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
@@ -219,6 +261,7 @@ const AdminArticlesPanel = () => {
                               variant="ghost" 
                               size="sm"
                               onClick={() => handleDeleteArticle(article)}
+                              className="text-red-600 hover:text-red-800"
                             >
                               <Trash className="h-4 w-4" />
                             </Button>
@@ -229,6 +272,15 @@ const AdminArticlesPanel = () => {
                   )}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          
+          {filteredArticles.length > 0 && (
+            <div className="mt-4 text-sm text-muted-foreground">
+              {language === 'en' 
+                ? `Showing ${filteredArticles.length} of ${articles.length} articles`
+                : `عرض ${filteredArticles.length} من أصل ${articles.length} مقال`
+              }
             </div>
           )}
         </CardContent>
