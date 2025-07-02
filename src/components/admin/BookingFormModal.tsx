@@ -19,14 +19,13 @@ import { toast } from "@/components/ui/sonner";
 
 interface Booking {
   id?: string;
-  title: string;
   service_type: string;
   description?: string;
   booking_date: string;
   booking_time: string;
   duration: number;
   price?: number;
-  status: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
 }
 
 interface BookingFormModalProps {
@@ -40,7 +39,6 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
   const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<Booking>({
-    title: '',
     service_type: '',
     description: '',
     booking_date: '',
@@ -55,7 +53,6 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
       setFormData(booking);
     } else {
       setFormData({
-        title: '',
         service_type: '',
         description: '',
         booking_date: '',
@@ -77,7 +74,6 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
         const { error } = await supabase
           .from('bookings')
           .update({
-            title: formData.title,
             service_type: formData.service_type,
             description: formData.description || null,
             booking_date: formData.booking_date,
@@ -96,7 +92,6 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
         const { error } = await supabase
           .from('bookings')
           .insert({
-            title: formData.title,
             service_type: formData.service_type,
             description: formData.description || null,
             booking_date: formData.booking_date,
@@ -135,16 +130,6 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="title">{language === 'en' ? 'Title' : 'العنوان'}</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
-              required
-            />
-          </div>
-
           <div>
             <Label htmlFor="service_type">{language === 'en' ? 'Service Type' : 'نوع الخدمة'}</Label>
             <Select value={formData.service_type} onValueChange={(value) => setFormData({...formData, service_type: value})}>
@@ -209,7 +194,7 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
 
           <div>
             <Label htmlFor="status">{language === 'en' ? 'Status' : 'الحالة'}</Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+            <Select value={formData.status} onValueChange={(value: 'pending' | 'confirmed' | 'cancelled' | 'completed') => setFormData({...formData, status: value})}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

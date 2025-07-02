@@ -30,11 +30,14 @@ import {
 interface Article {
   id: string;
   title: string;
+  content: string;
   author_id?: string;
   category: string;
   status?: string;
   published_at?: string;
   author?: string;
+  excerpt?: string;
+  image_url?: string;
 }
 
 const AdminArticlesPanel = () => {
@@ -53,7 +56,7 @@ const AdminArticlesPanel = () => {
       
       const { data: articlesData, error: articlesError } = await supabase
         .from('articles')
-        .select('id, title, author_id, category, status, published_at');
+        .select('id, title, content, author_id, category, status, published_at, excerpt, image_url');
       
       if (articlesError) throw articlesError;
       
