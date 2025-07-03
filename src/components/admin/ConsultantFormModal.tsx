@@ -23,13 +23,16 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Loader2 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
+
+type UserRole = Database['public']['Enums']['user_role'];
 
 interface Consultant {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
-  role: string;
+  role: UserRole;
   is_active: boolean;
   bio?: string;
   avatar_url?: string;
@@ -49,7 +52,7 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
     first_name: '',
     last_name: '',
     email: '',
-    role: 'consultant',
+    role: 'user' as UserRole,
     is_active: true,
     bio: '',
     password: ''
@@ -61,7 +64,7 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
         first_name: consultant.first_name || '',
         last_name: consultant.last_name || '',
         email: consultant.email || '',
-        role: consultant.role || 'consultant',
+        role: consultant.role || 'user',
         is_active: consultant.is_active ?? true,
         bio: consultant.bio || '',
         password: ''
@@ -71,7 +74,7 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
         first_name: '',
         last_name: '',
         email: '',
-        role: 'consultant',
+        role: 'user',
         is_active: true,
         bio: '',
         password: ''
@@ -231,13 +234,16 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
             <Label htmlFor="role">
               {language === 'en' ? 'Role' : 'الدور'} *
             </Label>
-            <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+            <Select value={formData.role} onValueChange={(value: UserRole) => setFormData({ ...formData, role: value })}>
               <SelectTrigger>
                 <SelectValue placeholder={language === 'en' ? 'Select role' : 'اختر الدور'} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="consultant">
-                  {language === 'en' ? 'Consultant' : 'مستشار'}
+                <SelectItem value="user">
+                  {language === 'en' ? 'User' : 'مستخدم'}
+                </SelectItem>
+                <SelectItem value="moderator">
+                  {language === 'en' ? 'Moderator' : 'مشرف'}
                 </SelectItem>
                 <SelectItem value="admin">
                   {language === 'en' ? 'Admin' : 'مدير'}
