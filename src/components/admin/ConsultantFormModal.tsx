@@ -88,37 +88,81 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
 
     try {
       if (consultant) {
-        // تحديث مستشار موجود باستخدام الدالة الجديدة
-        const { data, error } = await supabase.rpc('update_consultant', {
-          consultant_id: consultant.id,
-          consultant_first_name: formData.first_name,
-          consultant_last_name: formData.last_name,
-          consultant_email: formData.email,
-          consultant_role: formData.role,
-          consultant_bio: formData.bio,
-          consultant_is_active: formData.is_active
-        });
+        // تحديث مستشار موجود
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            email: formData.email,
+            role: formData.role,
+            bio: formData.bio,
+            is_active: formData.is_active,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', consultant.id);
 
         if (error) throw error;
 
+        // تسجيل النشاط
+        await supabase
+          .from('recent_activities')
+          .insert({
+            user_id: (await supabase.auth.getUser()).data.user?.id,
+            activity_type: 'consultant_updated',
+            title: 'تم تحديث مستشار',
+            description: `${formData.first_name} ${formData.last_name}`
+          });
+
         toast.success(language === 'en' ? 'Consultant updated successfully' : 'تم تحديث المستشار بنجاح');
       } else {
-        // إنشاء مستشار جديد باستخدام الدالة الجديدة
+        // إنشاء مستشار جديد
         if (!formData.password || formData.password.length < 6) {
           toast.error(language === 'en' ? 'Password must be at least 6 characters' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
           return;
         }
 
-        const { data, error } = await supabase.rpc('create_consultant', {
-          consultant_email: formData.email,
-          consultant_password: formData.password,
-          consultant_first_name: formData.first_name,
-          consultant_last_name: formData.last_name,
-          consultant_role: formData.role,
-          consultant_bio: formData.bio
+        // إنشاء مستخدم جديد في Auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              first_name: formData.first_name,
+              last_name: formData.last_name,
+              role: formData.role
+            }
+          }
         });
 
-        if (error) throw error;
+        if (authError) throw authError;
+
+        if (authData.user) {
+          // إنشاء الملف الشخصي
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              email: formData.email,
+              first_name: formData.first_name,
+              last_name: formData.last_name,
+              role: formData.role,
+              bio: formData.bio,
+              is_active: formData.is_active
+            });
+
+          if (profileError) throw profileError;
+
+          // تسجيل النشاط
+          await supabase
+            .from('recent_activities')
+            .insert({
+              user_id: (await supabase.auth.getUser()).data.user?.id,
+              activity_type: 'consultant_created',
+              title: 'تم إنشاء مستشار جديد',
+              description: `${formData.first_name} ${formData.last_name}`
+            });
+        }
 
         toast.success(language === 'en' ? 'Consultant created successfully' : 'تم إنشاء المستشار بنجاح');
       }

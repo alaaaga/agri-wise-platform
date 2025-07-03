@@ -94,6 +94,8 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
     }
 
     try {
+      const currentUser = await supabase.auth.getUser();
+      
       if (article?.id) {
         // تحديث مقال موجود
         const { error } = await supabase
@@ -112,20 +114,32 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
         if (error) throw error;
         toast.success(language === 'en' ? 'Article updated successfully' : 'تم تحديث المقال بنجاح');
       } else {
-        // إنشاء مقال جديد باستخدام الدالة الجديدة
-        const { data, error } = await supabase.rpc('create_article_multilang', {
-          article_title: formData.title_en,
-          article_title_ar: formData.title_ar || null,
-          article_content: formData.content_en,
-          article_content_ar: formData.content_ar || null,
-          article_category: formData.category,
-          article_excerpt: formData.excerpt_en || null,
-          article_excerpt_ar: formData.excerpt_ar || null,
-          article_image_url: formData.image_url || null,
-          article_tags: null
-        });
+        // إنشاء مقال جديد
+        const { error } = await supabase
+          .from('articles')
+          .insert({
+            title: formData.title_ar || formData.title_en,
+            content: formData.content_ar || formData.content_en,
+            category: formData.category,
+            excerpt: formData.excerpt_ar || formData.excerpt_en || null,
+            image_url: formData.image_url || null,
+            status: formData.status,
+            author_id: currentUser.data.user?.id,
+            published_at: new Date().toISOString()
+          });
 
         if (error) throw error;
+
+        // تسجيل النشاط
+        await supabase
+          .from('recent_activities')
+          .insert({
+            user_id: currentUser.data.user?.id,
+            activity_type: 'article_created',
+            title: 'تم إنشاء مقال جديد',
+            description: formData.title_ar || formData.title_en
+          });
+
         toast.success(language === 'en' ? 'Article created successfully' : 'تم إنشاء المقال بنجاح');
       }
 
