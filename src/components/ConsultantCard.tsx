@@ -3,7 +3,7 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Video, Phone } from 'lucide-react';
+import { Calendar, Video, Phone, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface Consultant {
@@ -39,11 +39,32 @@ export const ConsultantCard = ({ consultant, onBookNow, buttonText }: Consultant
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow">
       <div className="relative">
-        <img 
-          src={consultant.image} 
-          alt={consultant.name} 
-          className="w-full h-64 object-cover"
-        />
+        <div className="w-full h-64 bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
+          {consultant.image && consultant.image.startsWith('http') ? (
+            <img 
+              src={consultant.image} 
+              alt={consultant.name} 
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.parentElement!.innerHTML = `
+                  <div class="flex flex-col items-center justify-center h-full text-green-800">
+                    <svg class="w-16 h-16 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-sm font-medium">${consultant.name}</span>
+                  </div>
+                `;
+              }}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-green-800">
+              <User className="w-16 h-16 mb-2" />
+              <span className="text-sm font-medium">{consultant.name}</span>
+            </div>
+          )}
+        </div>
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
           <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200">
             {language === 'en' ? 'Agricultural Consultant' : 'مستشار زراعي'}
@@ -75,6 +96,14 @@ export const ConsultantCard = ({ consultant, onBookNow, buttonText }: Consultant
           </p>
         </div>
         
+        {consultant.consultationsCount && (
+          <div className="text-center mb-3">
+            <Badge variant="outline" className="text-xs">
+              {consultant.consultationsCount} {language === 'en' ? 'consultations' : 'استشارة'}
+            </Badge>
+          </div>
+        )}
+        
         <div className="flex justify-center gap-2 mb-4">
           <Badge variant="outline" className="flex items-center gap-1">
             <Video className="w-3 h-3" />
@@ -89,6 +118,12 @@ export const ConsultantCard = ({ consultant, onBookNow, buttonText }: Consultant
             {language === 'en' ? '30 min' : '30 دقيقة'}
           </Badge>
         </div>
+        
+        {consultant.description && (
+          <p className="text-gray-600 text-sm text-center mb-4 line-clamp-2">
+            {consultant.description}
+          </p>
+        )}
         
         <Button 
           onClick={onBookNow} 

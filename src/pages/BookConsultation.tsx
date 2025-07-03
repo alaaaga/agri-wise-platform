@@ -1,94 +1,31 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { Calendar } from '@/components/ui/calendar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { ConsultantCard } from '@/components/ConsultantCard';
 import { BookingModal } from '@/components/BookingModal';
 import { LoginPromptModal } from '@/components/LoginPromptModal';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-// محاكاة بيانات المستشارين
-const consultants = [
-  {
-    id: '1',
-    name: 'أحمد حسين',
-    title: 'أستاذ زراعي بجامعة طنطا',
-    image: 'https://i.pravatar.cc/150?img=11',
-    rating: 5,
-    price: 140,
-    originalPrice: 180,
-    consultationsCount: '200+',
-    specialty: 'الزراعة المستدامة',
-    description: 'مستشار زراعي ذو خبرة في تحسين المحاصيل وإدارة المزارع'
-  },
-  {
-    id: '2',
-    name: 'محمد علي',
-    title: 'خبير زراعي من جامعة طنطا',
-    image: 'https://i.pravatar.cc/150?img=12',
-    rating: 5,
-    price: 150,
-    originalPrice: 200,
-    consultationsCount: '150+',
-    specialty: 'رعاية المحاصيل',
-    description: 'متخصص في أمراض النباتات وتقنيات الري الحديثة'
-  },
-  {
-    id: '3',
-    name: 'سامي فؤاد',
-    title: 'باحث في الزراعة بجامعة طنطا',
-    image: 'https://i.pravatar.cc/150?img=13',
-    rating: 5,
-    price: 170,
-    originalPrice: 220,
-    consultationsCount: '170+',
-    specialty: 'التكنولوجيا الزراعية',
-    description: 'باحث متخصص في أحدث التقنيات الزراعية وتطبيقاتها'
-  },
-  {
-    id: '4',
-    name: 'خالد مصطفى',
-    title: 'خبير زراعي ومستشار من جامعة طنطا',
-    image: 'https://i.pravatar.cc/150?img=14',
-    rating: 5,
-    price: 200,
-    originalPrice: 250,
-    consultationsCount: '200+',
-    specialty: 'تحليل التربة',
-    description: 'خبير في تحليل التربة وتحسين خصائصها للزراعة'
-  }
-];
+interface Consultant {
+  id: string;
+  name: string;
+  title: string;
+  image: string;
+  rating: number;
+  price: number;
+  originalPrice: number;
+  consultationsCount?: string;
+  specialty?: string;
+  description?: string;
+}
 
 const BookConsultation = () => {
   const { t, language } = useLanguage();
@@ -97,9 +34,90 @@ const BookConsultation = () => {
   const navigate = useNavigate();
   const titleRef = useScrollAnimation();
   
+  const [consultants, setConsultants] = useState<Consultant[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedConsultant, setSelectedConsultant] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
+
+  const fetchConsultants = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: consultantsData, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          first_name,
+          last_name,
+          email,
+          role,
+          bio,
+          avatar_url,
+          is_active
+        `)
+        .eq('is_active', true)
+        .or('role.eq.user,role.eq.moderator,role.eq.admin')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // تحويل البيانات من قاعدة البيانات إلى التنسيق المطلوب
+      const formattedConsultants: Consultant[] = consultantsData?.map((consultant, index) => ({
+        id: consultant.id,
+        name: `${consultant.first_name || ''} ${consultant.last_name || ''}`.trim() || 'مستشار زراعي',
+        title: consultant.role === 'admin' 
+          ? 'أستاذ زراعي بجامعة طنطا' 
+          : consultant.role === 'moderator'
+          ? 'خبير زراعي من جامعة طنطا'
+          : 'باحث في الزراعة بجامعة طنطا',
+        image: consultant.avatar_url || `https://i.pravatar.cc/150?img=${11 + (index % 10)}`,
+        rating: 5,
+        price: 140 + (index * 10),
+        originalPrice: 180 + (index * 20),
+        consultationsCount: `${100 + (index * 50)}+`,
+        specialty: getSpecialtyByRole(consultant.role),
+        description: consultant.bio || getDescriptionByRole(consultant.role)
+      })) || [];
+      
+      setConsultants(formattedConsultants);
+    } catch (err) {
+      console.error('Error fetching consultants:', err);
+      toast({
+        title: language === 'en' ? 'Error' : 'خطأ',
+        description: language === 'en' ? 'Failed to load consultants' : 'فشل في تحميل المستشارين',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSpecialtyByRole = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'الزراعة المستدامة';
+      case 'moderator':
+        return 'رعاية المحاصيل';
+      default:
+        return 'التكنولوجيا الزراعية';
+    }
+  };
+
+  const getDescriptionByRole = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'مستشار زراعي ذو خبرة في تحسين المحاصيل وإدارة المزارع';
+      case 'moderator':
+        return 'متخصص في أمراض النباتات وتقنيات الري الحديثة';
+      default:
+        return 'باحث متخصص في أحدث التقنيات الزراعية وتطبيقاتها';
+    }
+  };
+
+  useEffect(() => {
+    fetchConsultants();
+  }, []);
   
   const handleBookNow = (consultant) => {
     if (!isAuthenticated) {
@@ -147,16 +165,37 @@ const BookConsultation = () => {
       </section>
 
       <section className="py-16 container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {consultants.map((consultant) => (
-            <ConsultantCard 
-              key={consultant.id}
-              consultant={consultant} 
-              onBookNow={() => handleBookNow(consultant)}
-              buttonText={language === 'en' ? 'Book Now' : 'احجز الآن'}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">
+              {language === 'en' ? 'Loading consultants...' : 'جاري تحميل المستشارين...'}
+            </span>
+          </div>
+        ) : consultants.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            {consultants.map((consultant) => (
+              <ConsultantCard 
+                key={consultant.id}
+                consultant={consultant} 
+                onBookNow={() => handleBookNow(consultant)}
+                buttonText={language === 'en' ? 'Book Now' : 'احجز الآن'}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600 mb-4">
+              {language === 'en' ? 'No consultants available at the moment' : 'لا يوجد مستشارين متاحين حالياً'}
+            </p>
+            <Button 
+              onClick={fetchConsultants}
+              variant="outline"
+            >
+              {language === 'en' ? 'Refresh' : 'تحديث'}
+            </Button>
+          </div>
+        )}
         
         <Card className="mt-8 border-dashed border-2 border-gray-300 bg-gray-50">
           <CardContent className="p-8 text-center">
