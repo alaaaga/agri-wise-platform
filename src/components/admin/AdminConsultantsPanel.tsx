@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,13 +26,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import type { Database } from '@/integrations/supabase/types';
+
+type UserRole = Database['public']['Enums']['user_role'];
 
 interface Consultant {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
-  role: string;
+  role: UserRole;
   is_active: boolean;
   bio?: string;
   avatar_url?: string;
@@ -70,7 +72,7 @@ const AdminConsultantsPanel = () => {
           avatar_url,
           created_at
         `)
-        .or('role.eq.consultant,role.eq.admin')
+        .or('role.eq.user,role.eq.admin,role.eq.moderator')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -80,7 +82,7 @@ const AdminConsultantsPanel = () => {
         first_name: consultant.first_name || '',
         last_name: consultant.last_name || '',
         email: consultant.email || '',
-        role: consultant.role || 'user',
+        role: consultant.role || 'user' as UserRole,
         is_active: consultant.is_active ?? true,
       })) || [];
       
@@ -224,7 +226,9 @@ const AdminConsultantsPanel = () => {
                             {consultant.role === 'admin' && <Shield className="h-3 w-3 mr-1" />}
                             {consultant.role === 'admin' 
                               ? (language === 'en' ? 'Admin' : 'مدير')
-                              : (language === 'en' ? 'Consultant' : 'مستشار')
+                              : consultant.role === 'moderator'
+                              ? (language === 'en' ? 'Moderator' : 'مشرف')
+                              : (language === 'en' ? 'User' : 'مستخدم')
                             }
                           </Badge>
                         </TableCell>
