@@ -1,42 +1,56 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ServiceCard from '../ServiceCard';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { supabase } from '@/integrations/supabase/client';
+import { Loader2 } from 'lucide-react';
+
+interface Service {
+  id: string;
+  name: string;
+  name_ar: string;
+  description: string;
+  description_ar: string;
+  image_url: string | null;
+}
 
 const ServicesSection = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const titleRef = useScrollAnimation();
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Using emoji icons for now, would be replaced with actual icons in production
-  const services = [
-    {
-      icon: '🌱',
-      title: t('services.crop.title'),
-      description: t('services.crop.description'),
-      link: '/services/crop-care'
-    },
-    {
-      icon: '🐄',
-      title: t('services.livestock.title'),
-      description: t('services.livestock.description'),
-      link: '/services/livestock'
-    },
-    {
-      icon: '🧪',
-      title: t('services.soil.title'),
-      description: t('services.soil.description'),
-      link: '/services/soil-analysis'
-    },
-    {
-      icon: '🚜',
-      title: t('services.tech.title'),
-      description: t('services.tech.description'),
-      link: '/services/agri-tech'
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: servicesData, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(4);
+      
+      if (error) throw error;
+      
+      setServices(servicesData || []);
+    } catch (err) {
+      console.error('Error fetching services:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const getServiceIcon = (index: number) => {
+    const icons = ['🌱', '🐄', '🧪', '🚜'];
+    return icons[index % icons.length];
+  };
 
   return (
     <section className="section-padding bg-gray-50">
@@ -46,17 +60,32 @@ const ServicesSection = () => {
           <div className="w-24 h-1 bg-agri mx-auto"></div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {services.map((service, index) => (
-            <ServiceCard
-              key={index}
-              title={service.title}
-              description={service.description}
-              icon={<span className="text-3xl">{service.icon}</span>}
-              link={service.link}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">
+              {language === 'en' ? 'Loading services...' : 'جاري تحميل الخدمات...'}
+            </span>
+          </div>
+        ) : services.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {services.map((service, index) => (
+              <ServiceCard
+                key={service.id}
+                title={language === 'ar' ? service.name_ar : service.name}
+                description={language === 'ar' ? service.description_ar || service.description || '' : service.description || service.description_ar || ''}
+                icon={<span className="text-3xl">{getServiceIcon(index)}</span>}
+                link={`/services/${service.id}`}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600">
+              {language === 'en' ? 'No services available yet.' : 'لا توجد خدمات متاحة حتى الآن.'}
+            </p>
+          </div>
+        )}
         
         <div className="text-center mt-12">
           <Link to="/services">

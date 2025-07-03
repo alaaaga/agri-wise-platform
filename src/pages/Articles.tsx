@@ -1,165 +1,36 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import ArticleCard from '@/components/ArticleCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Search, FileText, Dog, Leaf, Tractor } from 'lucide-react';
+import { Search, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
-// سيتم استبدال هذا بيانات حقيقية من واجهة برمجة التطبيقات
-const articlesData = [
-  {
-    id: '1',
-    title: {
-      en: 'Modern Irrigation Techniques for Sustainable Farming',
-      ar: 'تقنيات الري الحديثة للزراعة المستدامة'
-    },
-    summary: {
-      en: 'Discover the latest irrigation methods that conserve water while maximizing crop yield.',
-      ar: 'اكتشف أحدث طرق الري التي توفر المياه وتزيد من إنتاجية المحاصيل.'
-    },
-    date: {
-      en: 'May 15, 2023',
-      ar: '١٥ مايو ٢٠٢٣'
-    },
-    category: 'crop',
-    image: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
-    icon: <Leaf className="w-6 h-6" />
-  },
-  {
-    id: '2',
-    title: {
-      en: 'Livestock Health: Prevention and Treatment of Common Diseases',
-      ar: 'صحة الماشية: الوقاية وعلاج الأمراض الشائعة'
-    },
-    summary: {
-      en: 'A comprehensive guide to keeping your livestock healthy through preventative care and early disease detection.',
-      ar: 'دليل شامل للحفاظ على صحة ماشيتك من خلال الرعاية الوقائية والكشف المبكر عن الأمراض.'
-    },
-    date: {
-      en: 'April 22, 2023',
-      ar: '٢٢ أبريل ٢٠٢٣'
-    },
-    category: 'livestock',
-    image: 'https://images.unsplash.com/photo-1605152276897-4f618f831968?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
-    icon: <Dog className="w-6 h-6" />
-  },
-  {
-    id: '3',
-    title: {
-      en: 'Soil Testing: The Foundation of Successful Farming',
-      ar: 'اختبار التربة: أساس الزراعة الناجحة'
-    },
-    summary: {
-      en: 'Learn why regular soil testing is critical and how to interpret test results for optimal fertilization.',
-      ar: 'تعرف على سبب أهمية اختبار التربة المنتظم وكيفية تفسير نتائج الاختبار للتسميد الأمثل.'
-    },
-    date: {
-      en: 'March 10, 2023',
-      ar: '١٠ مارس ٢٠٢٣'
-    },
-    category: 'soil',
-    image: 'https://images.unsplash.com/photo-1605000797499-95a51c5269ae?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80',
-    icon: <Tractor className="w-6 h-6" />
-  },
-  {
-    id: '4',
-    title: {
-      en: 'Smart Farming: IoT Applications in Agriculture',
-      ar: 'الزراعة الذكية: تطبيقات إنترنت الأشياء في الزراعة'
-    },
-    summary: {
-      en: 'Explore how Internet of Things technology is revolutionizing farm management and productivity.',
-      ar: 'استكشف كيف تغير تقنية إنترنت الأشياء من إدارة المزارع وإنتاجيتها.'
-    },
-    date: {
-      en: 'February 5, 2023',
-      ar: '٥ فبراير ٢٠٢٣'
-    },
-    category: 'tech',
-    image: 'https://images.unsplash.com/photo-1584467541268-b040f83be3fd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
-    icon: <FileText className="w-6 h-6" />
-  },
-  {
-    id: '5',
-    title: {
-      en: 'Sustainable Pest Management Strategies',
-      ar: 'استراتيجيات مستدامة لإدارة الآفات'
-    },
-    summary: {
-      en: 'Discover eco-friendly approaches to control pests and protect your crops without harmful chemicals.',
-      ar: 'اكتشف طرق صديقة للبيئة للسيطرة على الآفات وحماية محاصيلك دون مواد كيميائية ضارة.'
-    },
-    date: {
-      en: 'January 18, 2023',
-      ar: '١٨ يناير ٢٠٢٣'
-    },
-    category: 'crop',
-    image: 'https://images.unsplash.com/photo-1471193945509-9ad0617afabf?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
-    icon: <Leaf className="w-6 h-6" />
-  },
-  {
-    id: '6',
-    title: {
-      en: 'Efficient Water Management for Desert Agriculture',
-      ar: 'إدارة المياه بكفاءة للزراعة في الصحراء'
-    },
-    summary: {
-      en: 'Innovative techniques for growing crops in arid regions with minimal water resources.',
-      ar: 'تقنيات مبتكرة لزراعة المحاصيل في المناطق القاحلة مع موارد مائية محدودة.'
-    },
-    date: {
-      en: 'December 3, 2022',
-      ar: '٣ ديسمبر ٢٠٢٢'
-    },
-    category: 'soil',
-    image: 'https://images.unsplash.com/photo-1551976796-c25191af0ffa?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80',
-    icon: <Tractor className="w-6 h-6" />
-  },
-  {
-    id: '7',
-    title: {
-      en: 'Animal Nutrition: Essential Diet for Healthy Livestock',
-      ar: 'تغذية الحيوان: النظام الغذائي الأساسي للماشية الصحية'
-    },
-    summary: {
-      en: 'Learn about proper nutrition for different livestock animals to improve health and productivity.',
-      ar: 'تعرف على التغذية المناسبة لمختلف حيوانات المزرعة لتحسين الصحة والإنتاجية.'
-    },
-    date: {
-      en: 'November 12, 2022',
-      ar: '١٢ نوفمبر ٢٠٢٢'
-    },
-    category: 'livestock',
-    image: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8Y293JTIwZmVlZGluZ3xlbnwwfHwwfHw%3D&auto=format&fit=crop&w=500&q=60',
-    icon: <Dog className="w-6 h-6" />
-  },
-  {
-    id: '8',
-    title: {
-      en: 'Breeding Techniques for Livestock Improvement',
-      ar: 'تقنيات التربية لتحسين الماشية'
-    },
-    summary: {
-      en: 'Explore modern breeding methods to enhance livestock genetics and improve production traits.',
-      ar: 'استكشف طرق التربية الحديثة لتعزيز وراثة الماشية وتحسين سمات الإنتاج.'
-    },
-    date: {
-      en: 'October 5, 2022',
-      ar: '٥ أكتوبر ٢٠٢٢'
-    },
-    category: 'livestock',
-    image: 'https://images.unsplash.com/photo-1516222338250-863216ce01ea?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y293fGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60',
-    icon: <Dog className="w-6 h-6" />
-  }
-];
+interface Article {
+  id: string;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  image_url: string | null;
+  category: string;
+  created_at: string;
+  published_at: string | null;
+  author_id: string | null;
+}
 
 const Articles = () => {
   const { language, t } = useLanguage();
   const titleRef = useScrollAnimation();
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState<string>('all');
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
   
   const categories = [
     { id: 'all', name: { en: 'All Articles', ar: 'كل المقالات' } },
@@ -168,15 +39,51 @@ const Articles = () => {
     { id: 'soil', name: { en: 'Soil Analysis', ar: 'تحليل التربة' } },
     { id: 'tech', name: { en: 'Agricultural Technology', ar: 'التكنولوجيا الزراعية' } },
   ];
+
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: articlesData, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      setArticles(articlesData || []);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+      toast({
+        title: language === 'en' ? 'Error' : 'خطأ',
+        description: language === 'en' ? 'Failed to load articles' : 'فشل في تحميل المقالات',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
   
   // تصفية المقالات حسب البحث والفئة
-  const filteredArticles = articlesData.filter(article => {
-    const matchesSearch = article.title[language as 'en' | 'ar'].toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        article.summary[language as 'en' | 'ar'].toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredArticles = articles.filter(article => {
+    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        (article.excerpt || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
   });
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return language === 'ar' 
+      ? date.toLocaleDateString('ar-EG')
+      : date.toLocaleDateString('en-US');
+  };
 
   return (
     <Layout>
@@ -219,17 +126,24 @@ const Articles = () => {
             </div>
           </div>
 
-          {filteredArticles.length > 0 ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">
+                {language === 'en' ? 'Loading articles...' : 'جاري تحميل المقالات...'}
+              </span>
+            </div>
+          ) : filteredArticles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredArticles.map((article) => (
                 <ArticleCard
                   key={article.id}
-                  title={article.title[language as 'en' | 'ar']}
-                  summary={article.summary[language as 'en' | 'ar']}
-                  image={article.image}
-                  date={article.date[language as 'en' | 'ar']}
+                  title={article.title}
+                  summary={article.excerpt || article.content.substring(0, 150) + '...'}
+                  image={article.image_url || 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80'}
+                  date={formatDate(article.published_at || article.created_at)}
                   link={`/content/articles/${article.id}`}
-                  icon={article.icon}
+                  icon={<FileText className="w-6 h-6" />}
                 />
               ))}
             </div>

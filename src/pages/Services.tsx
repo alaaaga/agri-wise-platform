@@ -1,79 +1,61 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ServiceCard from '@/components/ServiceCard';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+
+interface Service {
+  id: string;
+  name: string;
+  name_ar: string;
+  description: string;
+  description_ar: string;
+  image_url: string | null;
+}
 
 const Services = () => {
   const { t, language } = useLanguage();
   const titleRef = useScrollAnimation();
-  
-  // Using emoji icons for now, would be replaced with actual icons in production
-  const services = [
-    {
-      icon: '🌱',
-      title: t('services.crop.title'),
-      description: t('services.crop.description'),
-      link: '/services/crop-care',
-      details: t('services.crop.description') + ' ' + 
-        (language === 'en' 
-          ? 'Our experts provide tailored advice on pest management, disease prevention, and optimal growing conditions.' 
-          : 'يقدم خبراؤنا نصائح مخصصة حول إدارة الآفات والوقاية من الأمراض وظروف النمو المثلى.')
-    },
-    {
-      icon: '🐄',
-      title: t('services.livestock.title'),
-      description: t('services.livestock.description'),
-      link: '/services/livestock',
-      details: t('services.livestock.description') + ' ' + 
-        (language === 'en' 
-          ? 'From nutrition planning to breeding programs and health protocols, we help maximize your livestock productivity.' 
-          : 'من تخطيط التغذية إلى برامج التربية وبروتوكولات الصحة، نساعد في تعظيم إنتاجية ماشيتك.')
-    },
-    {
-      icon: '🧪',
-      title: t('services.soil.title'),
-      description: t('services.soil.description'),
-      link: '/services/soil-analysis',
-      details: t('services.soil.description') + ' ' + 
-        (language === 'en' 
-          ? 'Our comprehensive soil testing identifies nutrient deficiencies and provides specific fertilization recommendations.' 
-          : 'يحدد اختبار التربة الشامل لدينا نقص العناصر الغذائية ويقدم توصيات تسميد محددة.')
-    },
-    {
-      icon: '🚜',
-      title: t('services.tech.title'),
-      description: t('services.tech.description'),
-      link: '/services/agri-tech',
-      details: t('services.tech.description') + ' ' + 
-        (language === 'en' 
-          ? 'We help you integrate precision agriculture tools, IoT sensors, and automated systems for improved efficiency.' 
-          : 'نساعدك على دمج أدوات الزراعة الدقيقة وأجهزة استشعار إنترنت الأشياء والأنظمة الآلية لتحسين الكفاءة.')
-    },
-    {
-      icon: '🌿',
-      title: language === 'en' ? 'Organic Farming' : 'الزراعة العضوية',
-      description: language === 'en' 
-        ? 'Guidance on organic certification and sustainable practices' 
-        : 'إرشادات حول الشهادات العضوية والممارسات المستدامة',
-      link: '/services/organic',
-      details: language === 'en' 
-        ? 'Guidance on organic certification and sustainable practices. We provide complete support for transitioning to organic methods and maintaining certification.' 
-        : 'إرشادات حول الشهادات العضوية والممارسات المستدامة. نقدم دعمًا كاملاً للانتقال إلى الطرق العضوية والحفاظ على الشهادة.'
-    },
-    {
-      icon: '🚰',
-      title: language === 'en' ? 'Water Management' : 'إدارة المياه',
-      description: language === 'en' 
-        ? 'Water conservation and irrigation system optimization' 
-        : 'الحفاظ على المياه وتحسين نظام الري',
-      link: '/services/water',
-      details: language === 'en' 
-        ? 'Water conservation and irrigation system optimization. Our experts design efficient irrigation systems that save water while ensuring optimal crop hydration.' 
-        : 'الحفاظ على المياه وتحسين نظام الري. يصمم خبراؤنا أنظمة ري فعالة توفر المياه مع ضمان الترطيب الأمثل للمحاصيل.'
+  const { toast } = useToast();
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: servicesData, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      
+      setServices(servicesData || []);
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      toast({
+        title: language === 'en' ? 'Error' : 'خطأ',
+        description: language === 'en' ? 'Failed to load services' : 'فشل في تحميل الخدمات',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const getServiceIcon = (index: number) => {
+    const icons = ['🌱', '🐄', '🧪', '🚜', '🌿', '🚰'];
+    return icons[index % icons.length];
+  };
 
   return (
     <Layout>
@@ -88,17 +70,32 @@ const Services = () => {
 
       <section className="section-padding">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <ServiceCard
-                key={index}
-                title={service.title}
-                description={service.details}
-                icon={<span className="text-3xl">{service.icon}</span>}
-                link={service.link}
-              />
-            ))}
-          </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2">
+                {language === 'en' ? 'Loading services...' : 'جاري تحميل الخدمات...'}
+              </span>
+            </div>
+          ) : services.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {services.map((service, index) => (
+                <ServiceCard
+                  key={service.id}
+                  title={language === 'ar' ? service.name_ar : service.name}
+                  description={language === 'ar' ? service.description_ar || service.description || '' : service.description || service.description_ar || ''}
+                  icon={<span className="text-3xl">{getServiceIcon(index)}</span>}
+                  link={`/services/${service.id}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-600 mb-4">
+                {language === 'en' ? 'No services available at the moment' : 'لا توجد خدمات متاحة حالياً'}
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </Layout>

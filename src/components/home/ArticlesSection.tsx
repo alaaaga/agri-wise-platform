@@ -1,53 +1,61 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ArticleCard from '../ArticleCard';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-import { FileText, Leaf, Tractor } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-// Placeholder images - would use actual images in production
-import cropImage from '../../assets/crop.jpg';
-import livestockImage from '../../assets/livestock.jpg';
-import soilImage from '../../assets/soil.jpg';
+interface Article {
+  id: string;
+  title: string;
+  content: string;
+  excerpt: string | null;
+  image_url: string | null;
+  category: string;
+  created_at: string;
+  published_at: string | null;
+}
 
 const ArticlesSection = () => {
   const { t, language } = useLanguage();
   const titleRef = useScrollAnimation();
-  
-  const articles = [
-    {
-      title: language === 'en' ? 'Modern Irrigation Techniques for Sustainable Farming' : 'تقنيات الري الحديثة للزراعة المستدامة',
-      summary: language === 'en' 
-        ? 'Discover the latest irrigation methods that conserve water while maximizing crop yield.' 
-        : 'اكتشف أحدث طرق الري التي توفر المياه وتزيد من إنتاجية المحاصيل.',
-      image: cropImage,
-      date: language === 'en' ? 'May 15, 2023' : '١٥ مايو ٢٠٢٣',
-      link: '/content/articles/modern-irrigation',
-      icon: <Leaf className="w-6 h-6" />
-    },
-    {
-      title: language === 'en' ? 'Livestock Health: Prevention and Treatment of Common Diseases' : 'صحة الماشية: الوقاية وعلاج الأمراض الشائعة',
-      summary: language === 'en'
-        ? 'A comprehensive guide to keeping your livestock healthy through preventative care and early disease detection.'
-        : 'دليل شامل للحفاظ على صحة ماشيتك من خلال الرعاية الوقائية والكشف المبكر عن الأمراض.',
-      image: livestockImage,
-      date: language === 'en' ? 'April 22, 2023' : '٢٢ أبريل ٢٠٢٣',
-      link: '/content/articles/livestock-health',
-      icon: <FileText className="w-6 h-6" />
-    },
-    {
-      title: language === 'en' ? 'Soil Testing: The Foundation of Successful Farming' : 'اختبار التربة: أساس الزراعة الناجحة',
-      summary: language === 'en'
-        ? 'Learn why regular soil testing is critical and how to interpret test results for optimal fertilization.'
-        : 'تعرف على سبب أهمية اختبار التربة المنتظم وكيفية تفسير نتائج الاختبار للتسميد الأمثل.',
-      image: soilImage,
-      date: language === 'en' ? 'March 10, 2023' : '١٠ مارس ٢٠٢٣',
-      link: '/content/articles/soil-testing',
-      icon: <Tractor className="w-6 h-6" />
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLatestArticles = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: articlesData, error } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(3);
+      
+      if (error) throw error;
+      
+      setArticles(articlesData || []);
+    } catch (err) {
+      console.error('Error fetching articles:', err);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchLatestArticles();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return language === 'ar' 
+      ? date.toLocaleDateString('ar-EG')
+      : date.toLocaleDateString('en-US');
+  };
 
   return (
     <section className="section-padding bg-gray-50 py-16">
@@ -59,19 +67,34 @@ const ArticlesSection = () => {
           <div className="w-24 h-1 bg-agri mx-auto"></div>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {articles.map((article, index) => (
-            <ArticleCard
-              key={index}
-              title={article.title}
-              summary={article.summary}
-              image={article.image}
-              date={article.date}
-              link={article.link}
-              icon={article.icon}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2">
+              {language === 'en' ? 'Loading articles...' : 'جاري تحميل المقالات...'}
+            </span>
+          </div>
+        ) : articles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {articles.map((article) => (
+              <ArticleCard
+                key={article.id}
+                title={article.title}
+                summary={article.excerpt || article.content.substring(0, 150) + '...'}
+                image={article.image_url || 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80'}
+                date={formatDate(article.published_at || article.created_at)}
+                link={`/content/articles/${article.id}`}
+                icon={<FileText className="w-6 h-6" />}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-600">
+              {language === 'en' ? 'No articles available yet.' : 'لا توجد مقالات متاحة حتى الآن.'}
+            </p>
+          </div>
+        )}
         
         <div className="text-center mt-12">
           <Link to="/content/articles">
