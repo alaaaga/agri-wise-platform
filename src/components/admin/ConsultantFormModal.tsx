@@ -88,57 +88,37 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
 
     try {
       if (consultant) {
-        // تحديث مستشار موجود
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            email: formData.email,
-            role: formData.role,
-            is_active: formData.is_active,
-            bio: formData.bio,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', consultant.id);
+        // تحديث مستشار موجود باستخدام الدالة الجديدة
+        const { data, error } = await supabase.rpc('update_consultant', {
+          consultant_id: consultant.id,
+          consultant_first_name: formData.first_name,
+          consultant_last_name: formData.last_name,
+          consultant_email: formData.email,
+          consultant_role: formData.role,
+          consultant_bio: formData.bio,
+          consultant_is_active: formData.is_active
+        });
 
         if (error) throw error;
 
         toast.success(language === 'en' ? 'Consultant updated successfully' : 'تم تحديث المستشار بنجاح');
       } else {
-        // إنشاء مستشار جديد
+        // إنشاء مستشار جديد باستخدام الدالة الجديدة
         if (!formData.password || formData.password.length < 6) {
           toast.error(language === 'en' ? 'Password must be at least 6 characters' : 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
           return;
         }
 
-        // إنشاء المستخدم في نظام المصادقة
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: formData.email,
-          password: formData.password,
-          user_metadata: {
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            role: formData.role
-          }
+        const { data, error } = await supabase.rpc('create_consultant', {
+          consultant_email: formData.email,
+          consultant_password: formData.password,
+          consultant_first_name: formData.first_name,
+          consultant_last_name: formData.last_name,
+          consultant_role: formData.role,
+          consultant_bio: formData.bio
         });
 
-        if (authError) throw authError;
-
-        // إنشاء الملف الشخصي
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: authData.user.id,
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            email: formData.email,
-            role: formData.role,
-            is_active: formData.is_active,
-            bio: formData.bio
-          });
-
-        if (profileError) throw profileError;
+        if (error) throw error;
 
         toast.success(language === 'en' ? 'Consultant created successfully' : 'تم إنشاء المستشار بنجاح');
       }

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -5,7 +6,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2 } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Database } from "@/integrations/supabase/types";
 
 type ContentStatus = Database['public']['Enums']['content_status'];
@@ -39,26 +40,42 @@ interface ArticleFormModalProps {
 const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFormModalProps) => {
   const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Article>({
-    title: '',
-    content: '',
+  const [formData, setFormData] = useState({
+    title_en: '',
+    title_ar: '',
+    content_en: '',
+    content_ar: '',
     category: '',
-    excerpt: '',
+    excerpt_en: '',
+    excerpt_ar: '',
     image_url: '',
     status: 'published' as ContentStatus
   });
 
   useEffect(() => {
     if (article) {
-      setFormData(article);
+      setFormData({
+        title_en: article.title,
+        title_ar: '',
+        content_en: article.content,
+        content_ar: '',
+        category: article.category,
+        excerpt_en: article.excerpt || '',
+        excerpt_ar: '',
+        image_url: article.image_url || '',
+        status: article.status || 'published'
+      });
     } else {
       setFormData({
-        title: '',
-        content: '',
+        title_en: '',
+        title_ar: '',
+        content_en: '',
+        content_ar: '',
         category: '',
-        excerpt: '',
+        excerpt_en: '',
+        excerpt_ar: '',
         image_url: '',
-        status: 'published' as ContentStatus
+        status: 'published'
       });
     }
   }, [article, open]);
@@ -68,32 +85,26 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
     setLoading(true);
 
     // التحقق من المدخلات المطلوبة
-    if (!formData.title || !formData.content || !formData.category) {
-      toast.error(language === 'en' ? 'Please fill in all required fields' : 'الرجاء ملء جميع الحقول المطلوبة');
+    if ((!formData.title_en && !formData.title_ar) || 
+        (!formData.content_en && !formData.content_ar) || 
+        !formData.category) {
+      toast.error(language === 'en' ? 'Please fill in required fields in at least one language' : 'الرجاء ملء الحقول المطلوبة بلغة واحدة على الأقل');
       setLoading(false);
       return;
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast.error(language === 'en' ? 'You must be logged in' : 'يجب تسجيل الدخول أولاً');
-        setLoading(false);
-        return;
-      }
-
       if (article?.id) {
         // تحديث مقال موجود
         const { error } = await supabase
           .from('articles')
           .update({
-            title: formData.title,
-            content: formData.content,
+            title: formData.title_ar || formData.title_en,
+            content: formData.content_ar || formData.content_en,
             category: formData.category,
-            excerpt: formData.excerpt || null,
+            excerpt: formData.excerpt_ar || formData.excerpt_en || null,
             image_url: formData.image_url || null,
-            status: formData.status as ContentStatus || 'published' as ContentStatus,
+            status: formData.status,
             updated_at: new Date().toISOString()
           })
           .eq('id', article.id);
@@ -101,19 +112,18 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
         if (error) throw error;
         toast.success(language === 'en' ? 'Article updated successfully' : 'تم تحديث المقال بنجاح');
       } else {
-        // إنشاء مقال جديد
-        const { error } = await supabase
-          .from('articles')
-          .insert({
-            title: formData.title,
-            content: formData.content,
-            category: formData.category,
-            excerpt: formData.excerpt || null,
-            image_url: formData.image_url || null,
-            status: 'published' as ContentStatus,
-            author_id: user.id,
-            published_at: new Date().toISOString()
-          });
+        // إنشاء مقال جديد باستخدام الدالة الجديدة
+        const { data, error } = await supabase.rpc('create_article_multilang', {
+          article_title: formData.title_en,
+          article_title_ar: formData.title_ar || null,
+          article_content: formData.content_en,
+          article_content_ar: formData.content_ar || null,
+          article_category: formData.category,
+          article_excerpt: formData.excerpt_en || null,
+          article_excerpt_ar: formData.excerpt_ar || null,
+          article_image_url: formData.image_url || null,
+          article_tags: null
+        });
 
         if (error) throw error;
         toast.success(language === 'en' ? 'Article created successfully' : 'تم إنشاء المقال بنجاح');
@@ -121,9 +131,9 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
 
       onSuccess();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving article:', error);
-      toast.error(language === 'en' ? 'Error saving article' : 'خطأ في حفظ المقال');
+      toast.error(error.message || (language === 'en' ? 'Error saving article' : 'خطأ في حفظ المقال'));
     } finally {
       setLoading(false);
     }
@@ -143,112 +153,148 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {article ? 
               (language === 'en' ? 'Edit Article' : 'تعديل المقال') : 
-              (language === 'en' ? 'Create New Article' : 'إنشاء مقال جديد')
+              (language === 'en' ? 'Create New Article (Multilingual)' : 'إنشاء مقال جديد (متعدد اللغات)')
             }
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="title" className="text-sm font-medium">
-              {language === 'en' ? 'Title' : 'العنوان'} <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
-              placeholder={language === 'en' ? 'Enter article title' : 'أدخل عنوان المقال'}
-              required
-              className="mt-1"
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="category" className="text-sm font-medium">
+                {language === 'en' ? 'Category' : 'التصنيف'} <span className="text-red-500">*</span>
+              </Label>
+              <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder={language === 'en' ? 'Select category' : 'اختر التصنيف'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label[language as 'en' | 'ar']}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="image_url" className="text-sm font-medium">
+                {language === 'en' ? 'Image URL' : 'رابط الصورة'}
+              </Label>
+              <Input
+                id="image_url"
+                value={formData.image_url}
+                onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                placeholder="https://example.com/image.jpg"
+                type="url"
+                className="mt-1"
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="category" className="text-sm font-medium">
-              {language === 'en' ? 'Category' : 'التصنيف'} <span className="text-red-500">*</span>
-            </Label>
-            <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder={language === 'en' ? 'Select category' : 'اختر التصنيف'} />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map(cat => (
-                  <SelectItem key={cat.value} value={cat.value}>
-                    {cat.label[language as 'en' | 'ar']}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Tabs defaultValue="en" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="en">English</TabsTrigger>
+              <TabsTrigger value="ar">العربية</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="en" className="space-y-4">
+              <div>
+                <Label htmlFor="title_en" className="text-sm font-medium">
+                  Title (English) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="title_en"
+                  value={formData.title_en}
+                  onChange={(e) => setFormData({...formData, title_en: e.target.value})}
+                  placeholder="Enter article title in English"
+                  className="mt-1"
+                />
+              </div>
 
-          <div>
-            <Label htmlFor="excerpt" className="text-sm font-medium">
-              {language === 'en' ? 'Excerpt' : 'المقتطف'}
-            </Label>
-            <Textarea
-              id="excerpt"
-              value={formData.excerpt}
-              onChange={(e) => setFormData({...formData, excerpt: e.target.value})}
-              placeholder={language === 'en' ? 'Brief description of the article' : 'وصف مختصر للمقال'}
-              rows={3}
-              className="mt-1"
-            />
-          </div>
+              <div>
+                <Label htmlFor="excerpt_en" className="text-sm font-medium">
+                  Excerpt (English)
+                </Label>
+                <Textarea
+                  id="excerpt_en"
+                  value={formData.excerpt_en}
+                  onChange={(e) => setFormData({...formData, excerpt_en: e.target.value})}
+                  placeholder="Brief description in English"
+                  rows={3}
+                  className="mt-1"
+                />
+              </div>
 
-          <div>
-            <Label htmlFor="image_url" className="text-sm font-medium">
-              {language === 'en' ? 'Image URL' : 'رابط الصورة'}
-            </Label>
-            <Input
-              id="image_url"
-              value={formData.image_url}
-              onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-              placeholder={language === 'en' ? 'https://example.com/image.jpg' : 'https://example.com/image.jpg'}
-              type="url"
-              className="mt-1"
-            />
-          </div>
+              <div>
+                <Label htmlFor="content_en" className="text-sm font-medium">
+                  Content (English) <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="content_en"
+                  value={formData.content_en}
+                  onChange={(e) => setFormData({...formData, content_en: e.target.value})}
+                  placeholder="Write your article content in English..."
+                  rows={10}
+                  className="mt-1"
+                />
+              </div>
+            </TabsContent>
 
-          <div>
-            <Label htmlFor="content" className="text-sm font-medium">
-              {language === 'en' ? 'Content' : 'المحتوى'} <span className="text-red-500">*</span>
-            </Label>
-            <Textarea
-              id="content"
-              value={formData.content}
-              onChange={(e) => setFormData({...formData, content: e.target.value})}
-              placeholder={language === 'en' ? 'Write your article content here...' : 'اكتب محتوى مقالك هنا...'}
-              rows={10}
-              required
-              className="mt-1"
-            />
-          </div>
+            <TabsContent value="ar" className="space-y-4">
+              <div>
+                <Label htmlFor="title_ar" className="text-sm font-medium">
+                  العنوان (العربية) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="title_ar"
+                  value={formData.title_ar}
+                  onChange={(e) => setFormData({...formData, title_ar: e.target.value})}
+                  placeholder="أدخل عنوان المقال بالعربية"
+                  className="mt-1"
+                  dir="rtl"
+                />
+              </div>
 
-          <div>
-            <Label htmlFor="status" className="text-sm font-medium">
-              {language === 'en' ? 'Status' : 'الحالة'}
-            </Label>
-            <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value as ContentStatus})}>
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="published">
-                  {language === 'en' ? 'Published' : 'منشور'}
-                </SelectItem>
-                <SelectItem value="draft">
-                  {language === 'en' ? 'Draft' : 'مسودة'}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+              <div>
+                <Label htmlFor="excerpt_ar" className="text-sm font-medium">
+                  المقتطف (العربية)
+                </Label>
+                <Textarea
+                  id="excerpt_ar"
+                  value={formData.excerpt_ar}
+                  onChange={(e) => setFormData({...formData, excerpt_ar: e.target.value})}
+                  placeholder="وصف مختصر بالعربية"
+                  rows={3}
+                  className="mt-1"
+                  dir="rtl"
+                />
+              </div>
 
-          <DialogFooter className="flex gap-2 pt-4">
+              <div>
+                <Label htmlFor="content_ar" className="text-sm font-medium">
+                  المحتوى (العربية) <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="content_ar"
+                  value={formData.content_ar}
+                  onChange={(e) => setFormData({...formData, content_ar: e.target.value})}
+                  placeholder="اكتب محتوى مقالك بالعربية..."
+                  rows={10}
+                  className="mt-1"
+                  dir="rtl"
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {language === 'en' ? 'Cancel' : 'إلغاء'}
             </Button>
@@ -264,7 +310,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
                   (language === 'en' ? 'Create Article' : 'إنشاء المقال')
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
