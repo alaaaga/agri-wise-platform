@@ -28,7 +28,8 @@ import {
   Shield,
   Package,
   ShoppingCart,
-  UserCheck
+  UserCheck,
+  MapPin
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -44,6 +45,7 @@ import AdminOrdersPanel from '@/components/admin/AdminOrdersPanel';
 import AdminProductsPanel from '@/components/admin/AdminProductsPanel';
 import AdminConsultantsPanel from '@/components/admin/AdminConsultantsPanel';
 import UserPermissionsPanel from '@/components/admin/UserPermissionsPanel';
+import AdminFieldVisitsPanel from '@/components/admin/AdminFieldVisitsPanel';
 import { toast } from "@/components/ui/sonner";
 
 const AdminDashboard = () => {
@@ -238,6 +240,10 @@ const AdminDashboard = () => {
               <Package className="h-4 w-4" />
               <span>{language === 'en' ? 'Orders' : 'الطلبات'}</span>
             </TabsTrigger>
+            <TabsTrigger value="field-visits" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              <span>{language === 'en' ? 'Field Visits' : 'الزيارات الميدانية'}</span>
+            </TabsTrigger>
             <TabsTrigger value="consultants" className="flex items-center gap-2">
               <UserCheck className="h-4 w-4" />
               <span>{language === 'en' ? 'Consultants' : 'المستشارين'}</span>
@@ -365,6 +371,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="orders">
             <AdminOrdersPanel />
+          </TabsContent>
+
+          <TabsContent value="field-visits">
+            <AdminFieldVisitsPanel />
           </TabsContent>
 
           <TabsContent value="consultants">
