@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +27,7 @@ import {
 import { CalendarIcon, Video, Phone, Clock, Check, CreditCard, BadgeDollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Consultant {
   id: string;
@@ -85,12 +85,43 @@ export const BookingModal = ({
     setCurrentStep('payment');
   };
   
-  const handlePayment = (e: React.FormEvent) => {
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user || !consultant || !date) {
+      toast({
+        title: language === 'en' ? 'Error' : 'خطأ',
+        description: language === 'en' ? 'Missing required information' : 'معلومات مطلوبة مفقودة',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Save booking to localStorage
-    if (user && consultant && date) {
+    try {
+      // Save booking to database
+      const { error } = await supabase
+        .from('bookings')
+        .insert({
+          client_id: user.id,
+          consultant_id: consultant.id,
+          booking_date: date.toISOString().split('T')[0],
+          booking_time: time,
+          service_type: consultationType,
+          title: `${language === 'en' ? 'Consultation with' : 'استشارة مع'} ${consultant.name}`,
+          description: message || null,
+          price: consultant.price,
+          status: 'pending',
+          notes: `${language === 'en' ? 'Payment method:' : 'طريقة الدفع:'} ${paymentMethod === 'credit' ? (language === 'en' ? 'Credit Card' : 'بطاقة ائتمان') : (language === 'en' ? 'Mobile Wallet' : 'محفظة إلكترونية')}`
+        });
+
+      if (error) {
+        console.error('Error creating booking:', error);
+        throw error;
+      }
+
+      // Also save to localStorage for immediate access
       const bookingId = `booking-${Date.now()}`;
       const newBooking = {
         id: bookingId,
@@ -118,19 +149,27 @@ export const BookingModal = ({
       
       // Save updated bookings
       localStorage.setItem('agriadvisor_bookings', JSON.stringify(existingBookings));
-    }
-    
-    // Simulate payment process
-    setTimeout(() => {
-      setIsSubmitting(false);
+
       toast({
         title: language === 'en' ? 'Payment Successful!' : 'تمت عملية الدفع بنجاح!',
         description: language === 'en'
           ? 'Your booking has been confirmed.'
           : 'تم تأكيد حجزك.',
       });
+      
       onBookingSuccess();
-    }, 1500);
+    } catch (error) {
+      console.error('Error processing booking:', error);
+      toast({
+        title: language === 'en' ? 'Booking Failed' : 'فشل في الحجز',
+        description: language === 'en' 
+          ? 'There was an error processing your booking. Please try again.' 
+          : 'حدث خطأ أثناء معالجة حجزك. يرجى المحاولة مرة أخرى.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   const goBackToDetails = () => {

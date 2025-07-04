@@ -79,21 +79,43 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error(language === 'en' ? 'Please select an image file' : 'يرجى اختيار ملف صورة');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(language === 'en' ? 'Image size should be less than 5MB' : 'يجب أن يكون حجم الصورة أقل من 5 ميجابايت');
+      return;
+    }
+
     setUploadingImage(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `products/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('agriwise')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(uploadError.message);
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('agriwise')
         .getPublicUrl(filePath);
+
+      if (!publicUrl) {
+        throw new Error('Failed to get public URL');
+      }
 
       setFormData(prev => ({
         ...prev,
@@ -103,13 +125,37 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
       toast.success(language === 'en' ? 'Image uploaded successfully' : 'تم رفع الصورة بنجاح');
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.error(language === 'en' ? 'Error uploading image' : 'خطأ في رفع الصورة');
+      toast.error(language === 'en' 
+        ? `Error uploading image: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        : `خطأ في رفع الصورة: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`
+      );
     } finally {
       setUploadingImage(false);
+      // Reset file input
+      if (e.target) {
+        e.target.value = '';
+      }
     }
   };
 
-  const removeImage = (index: number) => {
+  const removeImage = async (index: number) => {
+    const imageUrl = formData.images[index];
+    
+    // Extract file path from URL for deletion
+    if (imageUrl.includes('agriwise')) {
+      try {
+        const urlParts = imageUrl.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        const filePath = `products/${fileName}`;
+        
+        await supabase.storage
+          .from('agriwise')
+          .remove([filePath]);
+      } catch (error) {
+        console.error('Error removing image from storage:', error);
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
@@ -121,6 +167,13 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
     setLoading(true);
 
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       if (product?.id) {
         // تحديث منتج موجود
         const { error } = await supabase
@@ -157,7 +210,7 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
             currency: formData.currency,
             is_active: formData.is_active,
             images: formData.images,
-            seller_id: (await supabase.auth.getUser()).data.user?.id
+            seller_id: user.id
           });
 
         if (error) throw error;
@@ -168,7 +221,10 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving product:', error);
-      toast.error(language === 'en' ? 'Error saving product' : 'خطأ في حفظ المنتج');
+      toast.error(language === 'en' 
+        ? `Error saving product: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        : `خطأ في حفظ المنتج: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`
+      );
     } finally {
       setLoading(false);
     }
@@ -307,6 +363,10 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
                       src={image}
                       alt={`Product ${index + 1}`}
                       className="w-full h-20 object-cover rounded border"
+                      onError={(e) => {
+                        console.error('Image failed to load:', image);
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=150&h=150&fit=crop';
+                      }}
                     />
                     <Button
                       type="button"

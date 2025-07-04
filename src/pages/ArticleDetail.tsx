@@ -33,9 +33,14 @@ const ArticleDetail = () => {
   const { toast } = useToast();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   
   const fetchArticle = async () => {
-    if (!id) return;
+    if (!id) {
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
@@ -52,13 +57,21 @@ const ArticleDetail = () => {
         `)
         .eq('id', id)
         .eq('status', 'published')
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching article:', error);
+        throw error;
+      }
       
-      setArticle(articleData);
+      if (!articleData) {
+        setNotFound(true);
+      } else {
+        setArticle(articleData);
+      }
     } catch (err) {
       console.error('Error fetching article:', err);
+      setNotFound(true);
       toast({
         title: language === 'en' ? 'Error' : 'خطأ',
         description: language === 'en' ? 'Failed to load article' : 'فشل في تحميل المقال',
@@ -92,7 +105,14 @@ const ArticleDetail = () => {
       'crop': { en: 'Crop Care', ar: 'رعاية المحاصيل' },
       'livestock': { en: 'Livestock', ar: 'الثروة الحيوانية' },
       'soil': { en: 'Soil Analysis', ar: 'تحليل التربة' },
-      'tech': { en: 'Agricultural Technology', ar: 'التكنولوجيا الزراعية' }
+      'tech': { en: 'Agricultural Technology', ar: 'التكنولوجيا الزراعية' },
+      'irrigation': { en: 'Irrigation', ar: 'الري' },
+      'organic-farming': { en: 'Organic Farming', ar: 'الزراعة العضوية' },
+      'pest-control': { en: 'Pest Control', ar: 'مكافحة الآفات' },
+      'animal-nutrition': { en: 'Animal Nutrition', ar: 'تغذية الحيوانات' },
+      'veterinary': { en: 'Veterinary Care', ar: 'الرعاية البيطرية' },
+      'dairy-farming': { en: 'Dairy Farming', ar: 'تربية الألبان' },
+      'poultry': { en: 'Poultry Management', ar: 'إدارة الدواجن' }
     };
     
     return categories[category]?.[language as 'en' | 'ar'] || category;
@@ -109,7 +129,7 @@ const ArticleDetail = () => {
     );
   }
   
-  if (!article) {
+  if (notFound || !article) {
     return (
       <Layout>
         <div className="container mx-auto py-16 px-4 text-center">
