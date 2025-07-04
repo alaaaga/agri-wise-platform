@@ -201,6 +201,15 @@ const ServiceDetail = () => {
     setBookingModalOpen(true);
   };
 
+  const handleBookingSuccess = () => {
+    setBookingModalOpen(false);
+    setSelectedConsultationType(null);
+    toast({
+      title: language === 'en' ? 'Booking Confirmed!' : 'تم تأكيد الحجز!',
+      description: language === 'en' ? 'Your consultation has been booked successfully.' : 'تم حجز استشارتك بنجاح.',
+    });
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -230,6 +239,14 @@ const ServiceDetail = () => {
   const serviceDescription = language === 'ar' ? service.description_ar || service.description : service.description;
   const features = getServiceFeatures(service.name_ar);
   const consultationTypes = getConsultationTypes(service.name_ar);
+
+  const consultant = selectedConsultationType ? {
+    id: 'expert-consultant',
+    name: language === 'en' ? 'Agricultural Expert' : 'خبير زراعي',
+    image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face',
+    price: selectedConsultationType.price,
+    specialty: serviceName
+  } : null;
 
   return (
     <Layout>
@@ -344,13 +361,12 @@ const ServiceDetail = () => {
       </section>
 
       {/* Booking Modal */}
-      {selectedConsultationType && (
+      {consultant && (
         <BookingModal
-          open={bookingModalOpen}
-          onOpenChange={setBookingModalOpen}
-          serviceType={`${serviceName} - ${selectedConsultationType.title}`}
-          price={selectedConsultationType.price}
-          duration={selectedConsultationType.duration}
+          isOpen={bookingModalOpen}
+          onClose={() => setBookingModalOpen(false)}
+          consultant={consultant}
+          onBookingSuccess={handleBookingSuccess}
         />
       )}
     </Layout>
