@@ -154,16 +154,31 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
   };
 
   const categories = [
-    { value: 'irrigation', label: { en: 'Irrigation', ar: 'الري' } },
-    { value: 'organic', label: { en: 'Organic Farming', ar: 'الزراعة العضوية' } },
-    { value: 'pest-control', label: { en: 'Pest Control', ar: 'مكافحة الآفات' } },
-    { value: 'sustainability', label: { en: 'Sustainability', ar: 'الاستدامة' } },
-    { value: 'water-management', label: { en: 'Water Management', ar: 'إدارة المياه' } },
-    { value: 'crops', label: { en: 'Crops', ar: 'المحاصيل' } },
-    { value: 'livestock', label: { en: 'Livestock', ar: 'الثروة الحيوانية' } },
-    { value: 'soil', label: { en: 'Soil Analysis', ar: 'تحليل التربة' } },
-    { value: 'technology', label: { en: 'Agricultural Technology', ar: 'التكنولوجيا الزراعية' } }
+    // التصنيفات الزراعية
+    { value: 'irrigation', label: { en: 'Irrigation', ar: 'الري' }, type: 'agricultural' },
+    { value: 'organic-farming', label: { en: 'Organic Farming', ar: 'الزراعة العضوية' }, type: 'agricultural' },
+    { value: 'pest-control', label: { en: 'Pest Control', ar: 'مكافحة الآفات' }, type: 'agricultural' },
+    { value: 'sustainability', label: { en: 'Sustainability', ar: 'الاستدامة' }, type: 'agricultural' },
+    { value: 'water-management', label: { en: 'Water Management', ar: 'إدارة المياه' }, type: 'agricultural' },
+    { value: 'crops', label: { en: 'Crops', ar: 'المحاصيل' }, type: 'agricultural' },
+    { value: 'soil', label: { en: 'Soil Analysis', ar: 'تحليل التربة' }, type: 'agricultural' },
+    { value: 'technology', label: { en: 'Agricultural Technology', ar: 'التكنولوجيا الزراعية' }, type: 'agricultural' },
+    { value: 'seeds', label: { en: 'Seeds & Planting', ar: 'البذور والزراعة' }, type: 'agricultural' },
+    { value: 'greenhouse', label: { en: 'Greenhouse Management', ar: 'إدارة البيوت المحمية' }, type: 'agricultural' },
+    
+    // التصنيفات الحيوانية
+    { value: 'livestock', label: { en: 'Livestock Care', ar: 'رعاية الماشية' }, type: 'livestock' },
+    { value: 'animal-nutrition', label: { en: 'Animal Nutrition', ar: 'تغذية الحيوانات' }, type: 'livestock' },
+    { value: 'veterinary', label: { en: 'Veterinary Care', ar: 'الرعاية البيطرية' }, type: 'livestock' },
+    { value: 'dairy-farming', label: { en: 'Dairy Farming', ar: 'تربية الألبان' }, type: 'livestock' },
+    { value: 'poultry', label: { en: 'Poultry Management', ar: 'إدارة الدواجن' }, type: 'livestock' },
+    { value: 'animal-breeding', label: { en: 'Animal Breeding', ar: 'تربية الحيوانات' }, type: 'livestock' },
+    { value: 'animal-health', label: { en: 'Animal Health', ar: 'صحة الحيوانات' }, type: 'livestock' },
+    { value: 'pasture-management', label: { en: 'Pasture Management', ar: 'إدارة المراعي' }, type: 'livestock' }
   ];
+
+  const agriculturalCategories = categories.filter(cat => cat.type === 'agricultural');
+  const livestockCategories = categories.filter(cat => cat.type === 'livestock');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,7 +193,7 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <Label htmlFor="category" className="text-sm font-medium">
                 {language === 'en' ? 'Category' : 'التصنيف'} <span className="text-red-500">*</span>
@@ -188,9 +203,20 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
                   <SelectValue placeholder={language === 'en' ? 'Select category' : 'اختر التصنيف'} />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map(cat => (
+                  <div className="p-2 font-semibold text-green-700">
+                    {language === 'en' ? 'Agricultural Articles' : 'مقالات زراعية'}
+                  </div>
+                  {agriculturalCategories.map(cat => (
                     <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label[language as 'en' | 'ar']}
+                      🌱 {cat.label[language as 'en' | 'ar']}
+                    </SelectItem>
+                  ))}
+                  <div className="p-2 font-semibold text-orange-700 mt-2">
+                    {language === 'en' ? 'Livestock Articles' : 'مقالات حيوانية'}
+                  </div>
+                  {livestockCategories.map(cat => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      🐄 {cat.label[language as 'en' | 'ar']}
                     </SelectItem>
                   ))}
                 </SelectContent>

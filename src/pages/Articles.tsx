@@ -29,26 +29,53 @@ const Articles = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   
   const categories = [
-    { id: 'all', name: { en: 'All Articles', ar: 'كل المقالات' } },
-    { id: 'crop', name: { en: 'Crop Care', ar: 'رعاية المحاصيل' } },
-    { id: 'livestock', name: { en: 'Livestock', ar: 'الثروة الحيوانية' } },
-    { id: 'soil', name: { en: 'Soil Analysis', ar: 'تحليل التربة' } },
-    { id: 'tech', name: { en: 'Agricultural Technology', ar: 'التكنولوجيا الزراعية' } },
+    { id: 'all', name: { en: 'All Articles', ar: 'كل المقالات' }, type: 'all' },
+    
+    // التصنيفات الزراعية
+    { id: 'irrigation', name: { en: 'Irrigation', ar: 'الري' }, type: 'agricultural' },
+    { id: 'organic-farming', name: { en: 'Organic Farming', ar: 'الزراعة العضوية' }, type: 'agricultural' },
+    { id: 'pest-control', name: { en: 'Pest Control', ar: 'مكافحة الآفات' }, type: 'agricultural' },
+    { id: 'sustainability', name: { en: 'Sustainability', ar: 'الاستدامة' }, type: 'agricultural' },
+    { id: 'water-management', name: { en: 'Water Management', ar: 'إدارة المياه' }, type: 'agricultural' },
+    { id: 'crops', name: { en: 'Crops', ar: 'المحاصيل' }, type: 'agricultural' },
+    { id: 'soil', name: { en: 'Soil Analysis', ar: 'تحليل التربة' }, type: 'agricultural' },
+    { id: 'technology', name: { en: 'Agricultural Technology', ar: 'التكنولوجيا الزراعية' }, type: 'agricultural' },
+    { id: 'seeds', name: { en: 'Seeds & Planting', ar: 'البذور والزراعة' }, type: 'agricultural' },
+    { id: 'greenhouse', name: { en: 'Greenhouse Management', ar: 'إدارة البيوت المحمية' }, type: 'agricultural' },
+    
+    // التصنيفات الحيوانية
+    { id: 'livestock', name: { en: 'Livestock Care', ar: 'رعاية الماشية' }, type: 'livestock' },
+    { id: 'animal-nutrition', name: { en: 'Animal Nutrition', ar: 'تغذية الحيوانات' }, type: 'livestock' },
+    { id: 'veterinary', name: { en: 'Veterinary Care', ar: 'الرعاية البيطرية' }, type: 'livestock' },
+    { id: 'dairy-farming', name: { en: 'Dairy Farming', ar: 'تربية الألبان' }, type: 'livestock' },
+    { id: 'poultry', name: { en: 'Poultry Management', ar: 'إدارة الدواجن' }, type: 'livestock' },
+    { id: 'animal-breeding', name: { en: 'Animal Breeding', ar: 'تربية الحيوانات' }, type: 'livestock' },
+    { id: 'animal-health', name: { en: 'Animal Health', ar: 'صحة الحيوانات' }, type: 'livestock' },
+    { id: 'pasture-management', name: { en: 'Pasture Management', ar: 'إدارة المراعي' }, type: 'livestock' }
+  ];
+
+  const typeFilters = [
+    { id: 'all', name: { en: 'All Types', ar: 'كل الأنواع' } },
+    { id: 'agricultural', name: { en: 'Agricultural', ar: 'زراعية' } },
+    { id: 'livestock', name: { en: 'Livestock', ar: 'حيوانية' } }
   ];
 
   const fetchArticles = async () => {
     try {
       setLoading(true);
       
-      const { data: articlesData, error } = await supabase
+      let query = supabase
         .from('articles')
         .select('*')
         .eq('status', 'published')
         .order('published_at', { ascending: false });
+      
+      const { data: articlesData, error } = await query;
       
       if (error) throw error;
       
@@ -69,13 +96,19 @@ const Articles = () => {
     fetchArticles();
   }, []);
   
-  // تصفية المقالات حسب البحث والفئة
+  // تصفية المقالات
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                         (article.excerpt || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
     
-    return matchesSearch && matchesCategory;
+    let matchesType = true;
+    if (selectedType !== 'all') {
+      const category = categories.find(cat => cat.id === article.category);
+      matchesType = category?.type === selectedType;
+    }
+    
+    return matchesSearch && matchesCategory && matchesType;
   });
 
   const formatDate = (dateString: string) => {
@@ -83,6 +116,11 @@ const Articles = () => {
     return language === 'ar' 
       ? date.toLocaleDateString('ar-EG')
       : date.toLocaleDateString('en-US');
+  };
+
+  const getCategoryIcon = (category: string) => {
+    const categoryObj = categories.find(cat => cat.id === category);
+    return categoryObj?.type === 'livestock' ? '🐄' : '🌱';
   };
 
   return (
@@ -93,8 +131,8 @@ const Articles = () => {
             <h1 className="text-4xl font-bold mb-4">{t('content.articles.title')}</h1>
             <p className="text-xl max-w-2xl mx-auto">
               {language === 'en' 
-                ? 'Discover the latest knowledge and insights in agricultural science and practices.' 
-                : 'اكتشف أحدث المعارف والرؤى في العلوم والممارسات الزراعية.'}
+                ? 'Discover the latest knowledge and insights in agricultural science and livestock management.' 
+                : 'اكتشف أحدث المعارف والرؤى في العلوم الزراعية وإدارة الثروة الحيوانية.'}
             </p>
           </div>
         </div>
@@ -102,6 +140,7 @@ const Articles = () => {
 
       <section className="py-12">
         <div className="container mx-auto px-4">
+          {/* فلاتر البحث والنوع */}
           <div className="flex flex-col md:flex-row gap-4 mb-8">
             <div className="relative flex-grow">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -112,18 +151,40 @@ const Articles = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {categories.map(category => (
+            
+            {/* فلتر النوع */}
+            <div className="flex gap-2">
+              {typeFilters.map(type => (
                 <Button 
-                  key={category.id}
-                  variant={selectedCategory === category.id ? "default" : "outline"}
-                  className={selectedCategory === category.id ? "bg-agri hover:bg-agri-dark" : ""}
-                  onClick={() => setSelectedCategory(category.id)}
+                  key={type.id}
+                  variant={selectedType === type.id ? "default" : "outline"}
+                  className={selectedType === type.id ? "bg-green-600 hover:bg-green-700" : ""}
+                  onClick={() => {
+                    setSelectedType(type.id);
+                    setSelectedCategory('all');
+                  }}
                 >
-                  {category.name[language as 'en' | 'ar']}
+                  {type.name[language as 'en' | 'ar']}
                 </Button>
               ))}
             </div>
+          </div>
+
+          {/* فلاتر التصنيفات */}
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-8">
+            {categories
+              .filter(cat => selectedType === 'all' || cat.type === selectedType || cat.id === 'all')
+              .map(category => (
+                <Button 
+                  key={category.id}
+                  variant={selectedCategory === category.id ? "default" : "outline"}
+                  className={selectedCategory === category.id ? "bg-agri hover:bg-agri-dark whitespace-nowrap" : "whitespace-nowrap"}
+                  onClick={() => setSelectedCategory(category.id)}
+                >
+                  {category.id !== 'all' && getCategoryIcon(category.id)} {category.name[language as 'en' | 'ar']}
+                </Button>
+              ))
+            }
           </div>
 
           {loading ? (
@@ -135,17 +196,20 @@ const Articles = () => {
             </div>
           ) : filteredArticles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredArticles.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  title={article.title}
-                  summary={article.excerpt || article.content.substring(0, 150) + '...'}
-                  image={article.image_url || 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1470&q=80'}
-                  date={formatDate(article.published_at || article.created_at)}
-                  link={`/content/articles/${article.id}`}
-                  icon={<FileText className="w-6 h-6" />}
-                />
-              ))}
+              {filteredArticles.map((article) => {
+                const categoryObj = categories.find(cat => cat.id === article.category);
+                return (
+                  <ArticleCard
+                    key={article.id}
+                    title={article.title}
+                    summary={article.excerpt || article.content.substring(0, 150) + '...'}
+                    image={article.image_url || `https://images.unsplash.com/photo-${categoryObj?.type === 'livestock' ? '1570042225831-d98fa7577f1e' : '1625246333195-78d9c38ad449'}?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80`}
+                    date={formatDate(article.published_at || article.created_at)}
+                    link={`/content/articles/${article.id}`}
+                    icon={<span className="text-xl">{getCategoryIcon(article.category)}</span>}
+                  />
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12">
