@@ -29,6 +29,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Account from "./pages/Account";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import AnimalArticles from "./pages/AnimalArticles";
 
 // Service detail pages
 import CropCareService from "./pages/CropCareService";

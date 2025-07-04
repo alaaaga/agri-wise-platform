@@ -54,7 +54,7 @@ const AdminFieldVisitsPanel = () => {
         visit_time: visit.booking_time,
         location: visit.description || 'غير محدد',
         service_type: 'زيارة ميدانية',
-        status: visit.status,
+        status: visit.status as 'pending' | 'confirmed' | 'completed' | 'cancelled',
         notes: visit.notes,
         price: visit.price,
         created_at: visit.created_at
@@ -95,7 +95,7 @@ const AdminFieldVisitsPanel = () => {
     return <Badge className={config.color}>{config.text}</Badge>;
   };
 
-  const updateVisitStatus = async (visitId: string, newStatus: string) => {
+  const updateVisitStatus = async (visitId: string, newStatus: 'pending' | 'confirmed' | 'completed' | 'cancelled') => {
     try {
       const { error } = await supabase
         .from('bookings')
