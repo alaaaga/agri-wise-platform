@@ -24,7 +24,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon, Video, Phone, Clock, Check, CreditCard, BadgeDollarSign } from 'lucide-react';
+import { CalendarIcon, Video, Phone, Clock, Check, CreditCard, BadgeDollarSign, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -100,6 +100,18 @@ export const BookingModal = ({
     setIsSubmitting(true);
     
     try {
+      console.log('Creating booking with data:', {
+        client_id: user.id,
+        consultant_id: consultant.id,
+        booking_date: date.toISOString().split('T')[0],
+        booking_time: time,
+        service_type: consultationType,
+        title: `${language === 'en' ? 'Consultation with' : 'استشارة مع'} ${consultant.name}`,
+        description: message || null,
+        price: consultant.price,
+        status: 'pending'
+      });
+
       // Save booking to database
       const { error } = await supabase
         .from('bookings')
@@ -218,32 +230,45 @@ export const BookingModal = ({
                   <Clock className="h-4 w-4" />
                   {language === 'en' ? 'Consultation Type' : 'نوع الاستشارة'}
                 </label>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button
                     type="button"
                     variant={consultationType === 'video' ? 'default' : 'outline'}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2",
+                      "flex items-center justify-center gap-2 text-xs px-2 py-2",
                       consultationType === 'video' ? 'bg-agri hover:bg-agri-dark' : ''
                     )}
                     onClick={() => setConsultationType('video')}
                   >
-                    <Video className="h-4 w-4" />
-                    {language === 'en' ? 'Video Call' : 'مكالمة فيديو'}
-                    {consultationType === 'video' && <Check className="h-3 w-3 ml-1" />}
+                    <Video className="h-3 w-3" />
+                    {language === 'en' ? 'Video' : 'فيديو'}
+                    {consultationType === 'video' && <Check className="h-2 w-2 ml-1" />}
                   </Button>
                   <Button
                     type="button"
                     variant={consultationType === 'voice' ? 'default' : 'outline'}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2",
+                      "flex items-center justify-center gap-2 text-xs px-2 py-2",
                       consultationType === 'voice' ? 'bg-agri hover:bg-agri-dark' : ''
                     )}
                     onClick={() => setConsultationType('voice')}
                   >
-                    <Phone className="h-4 w-4" />
-                    {language === 'en' ? 'Voice Call' : 'مكالمة صوتية'}
-                    {consultationType === 'voice' && <Check className="h-3 w-3 ml-1" />}
+                    <Phone className="h-3 w-3" />
+                    {language === 'en' ? 'Voice' : 'صوتي'}
+                    {consultationType === 'voice' && <Check className="h-2 w-2 ml-1" />}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={consultationType === 'field_visit' ? 'default' : 'outline'}
+                    className={cn(
+                      "flex items-center justify-center gap-2 text-xs px-2 py-2",
+                      consultationType === 'field_visit' ? 'bg-agri hover:bg-agri-dark' : ''
+                    )}
+                    onClick={() => setConsultationType('field_visit')}
+                  >
+                    <MapPin className="h-3 w-3" />
+                    {language === 'en' ? 'Field Visit' : 'زيارة ميدانية'}
+                    {consultationType === 'field_visit' && <Check className="h-2 w-2 ml-1" />}
                   </Button>
                 </div>
               </div>
@@ -302,16 +327,33 @@ export const BookingModal = ({
               
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  {language === 'en' ? 'Additional Information' : 'معلومات إضافية'}
+                  {consultationType === 'field_visit' 
+                    ? (language === 'en' ? 'Location & Additional Information' : 'الموقع والمعلومات الإضافية')
+                    : (language === 'en' ? 'Additional Information' : 'معلومات إضافية')
+                  }
                 </label>
                 <Textarea 
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder={language === 'en' 
-                    ? 'Describe your issue or question...' 
-                    : 'اشرح مشكلتك أو سؤالك...'}
-                  rows={3}
+                  placeholder={consultationType === 'field_visit' 
+                    ? (language === 'en' 
+                      ? 'Please provide your farm/field location and describe your issue...' 
+                      : 'يرجى تقديم موقع المزرعة/الحقل ووصف المشكلة...')
+                    : (language === 'en' 
+                      ? 'Describe your issue or question...' 
+                      : 'اشرح مشكلتك أو سؤالك...')
+                  }
+                  rows={consultationType === 'field_visit' ? 4 : 3}
+                  required={consultationType === 'field_visit'}
                 />
+                {consultationType === 'field_visit' && (
+                  <p className="text-xs text-muted-foreground">
+                    {language === 'en' 
+                      ? 'Field visits require location details and may have additional travel charges'
+                      : 'الزيارات الميدانية تتطلب تفاصيل الموقع وقد تتضمن رسوم سفر إضافية'
+                    }
+                  </p>
+                )}
               </div>
               
               <div className="pt-4">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -85,21 +84,29 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error(language === 'en' ? 'Image size should be less than 5MB' : 'يجب أن يكون حجم الصورة أقل من 5 ميجابايت');
+    // Validate file size (max 10MB to match bucket limit)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(language === 'en' ? 'Image size should be less than 10MB' : 'يجب أن يكون حجم الصورة أقل من 10 ميجابايت');
       return;
     }
 
     setUploadingImage(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${fileName}`;
+      // Get current user first
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
 
-      const { error: uploadError } = await supabase.storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `product-${user.id}-${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+      console.log('Uploading file to products bucket:', fileName);
+
+      const { error: uploadError, data } = await supabase.storage
         .from('products')
-        .upload(filePath, file, {
+        .upload(fileName, file, {
           cacheControl: '3600',
           upsert: false
         });
@@ -109,9 +116,13 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
         throw new Error(uploadError.message);
       }
 
+      console.log('Upload successful:', data);
+
       const { data: { publicUrl } } = supabase.storage
         .from('products')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
+
+      console.log('Public URL:', publicUrl);
 
       if (!publicUrl) {
         throw new Error('Failed to get public URL');
@@ -173,6 +184,8 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
         throw new Error('User not authenticated');
       }
 
+      console.log('Submitting product with data:', formData);
+
       if (product?.id) {
         // تحديث منتج موجود
         const { error } = await supabase
@@ -192,7 +205,11 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
           })
           .eq('id', product.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error:', error);
+          throw error;
+        }
+        
         toast.success(language === 'en' ? 'Product updated successfully' : 'تم تحديث المنتج بنجاح');
       } else {
         // إنشاء منتج جديد
@@ -212,7 +229,11 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
             seller_id: user.id
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error:', error);
+          throw error;
+        }
+        
         toast.success(language === 'en' ? 'Product created successfully' : 'تم إنشاء المنتج بنجاح');
       }
 
@@ -327,7 +348,7 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
             <div className="mt-2">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handleImageUpload}
                 className="hidden"
                 id="image-upload"
