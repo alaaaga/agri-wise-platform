@@ -36,6 +36,9 @@ interface Consultant {
   is_active: boolean;
   bio?: string;
   avatar_url?: string;
+  phone_price?: number;
+  video_price?: number;
+  field_visit_price?: number;
 }
 
 interface ConsultantFormModalProps {
@@ -55,7 +58,10 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
     role: 'user' as UserRole,
     is_active: true,
     bio: '',
-    password: ''
+    password: '',
+    phone_price: 120,
+    video_price: 150,
+    field_visit_price: 300
   });
 
   useEffect(() => {
@@ -67,7 +73,10 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
         role: consultant.role || 'user',
         is_active: consultant.is_active ?? true,
         bio: consultant.bio || '',
-        password: ''
+        password: '',
+        phone_price: consultant.phone_price || 120,
+        video_price: consultant.video_price || 150,
+        field_visit_price: consultant.field_visit_price || 300
       });
     } else {
       setFormData({
@@ -77,7 +86,10 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
         role: 'user',
         is_active: true,
         bio: '',
-        password: ''
+        password: '',
+        phone_price: 120,
+        video_price: 150,
+        field_visit_price: 300
       });
     }
   }, [consultant, open]);
@@ -98,6 +110,9 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
             role: formData.role,
             bio: formData.bio,
             is_active: formData.is_active,
+            phone_price: formData.phone_price,
+            video_price: formData.video_price,
+            field_visit_price: formData.field_visit_price,
             updated_at: new Date().toISOString()
           })
           .eq('id', consultant.id);
@@ -148,7 +163,10 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
               last_name: formData.last_name,
               role: formData.role,
               bio: formData.bio,
-              is_active: formData.is_active
+              is_active: formData.is_active,
+              phone_price: formData.phone_price,
+              video_price: formData.video_price,
+              field_visit_price: formData.field_visit_price
             });
 
           if (profileError) throw profileError;
@@ -179,7 +197,7 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {consultant 
@@ -274,6 +292,57 @@ const ConsultantFormModal = ({ open, onOpenChange, consultant, onSuccess }: Cons
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* أسعار الاستشارات */}
+          <div className="space-y-4 border-t pt-4">
+            <h3 className="text-lg font-semibold">
+              {language === 'en' ? 'Consultation Prices' : 'أسعار الاستشارات'}
+            </h3>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone_price">
+                  {language === 'en' ? 'Phone Price (EGP)' : 'سعر المكالمة (جنيه)'}
+                </Label>
+                <Input
+                  id="phone_price"
+                  type="number"
+                  value={formData.phone_price}
+                  onChange={(e) => setFormData({ ...formData, phone_price: parseInt(e.target.value) || 0 })}
+                  placeholder="120"
+                  min="0"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="video_price">
+                  {language === 'en' ? 'Video Price (EGP)' : 'سعر الفيديو (جنيه)'}
+                </Label>
+                <Input
+                  id="video_price"
+                  type="number"
+                  value={formData.video_price}
+                  onChange={(e) => setFormData({ ...formData, video_price: parseInt(e.target.value) || 0 })}
+                  placeholder="150"
+                  min="0"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="field_visit_price">
+                  {language === 'en' ? 'Field Visit Price (EGP)' : 'سعر الزيارة الميدانية (جنيه)'}
+                </Label>
+                <Input
+                  id="field_visit_price"
+                  type="number"
+                  value={formData.field_visit_price}
+                  onChange={(e) => setFormData({ ...formData, field_visit_price: parseInt(e.target.value) || 0 })}
+                  placeholder="300"
+                  min="0"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

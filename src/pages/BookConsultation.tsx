@@ -24,6 +24,9 @@ interface Consultant {
   consultationsCount?: string;
   specialty?: string;
   description?: string;
+  phone_price?: number;
+  video_price?: number;
+  field_visit_price?: number;
 }
 
 const BookConsultation = () => {
@@ -43,100 +46,47 @@ const BookConsultation = () => {
     try {
       setLoading(true);
       
-      // إنشاء بيانات وهمية للمستشارين إذا لم تكن متوفرة من قاعدة البيانات
-      const dummyConsultants: Consultant[] = [
-        {
-          id: '1',
-          name: 'د. أحمد المنصور',
-          title: 'أستاذ الزراعة بجامعة طنطا',
-          image: 'https://i.pravatar.cc/150?img=11',
-          rating: 5,
-          price: 150,
-          originalPrice: 200,
-          consultationsCount: '200+',
-          specialty: 'الزراعة المستدامة',
-          description: 'خبير في تحسين المحاصيل وإدارة المزارع بطرق مستدامة'
-        },
-        {
-          id: '2',
-          name: 'د. فاطمة عبدالله',
-          title: 'خبيرة الثروة الحيوانية',
-          image: 'https://i.pravatar.cc/150?img=12',
-          rating: 5,
-          price: 140,
-          originalPrice: 180,
-          consultationsCount: '150+',
-          specialty: 'رعاية الحيوانات',
-          description: 'متخصصة في أمراض الحيوانات والتغذية السليمة'
-        },
-        {
-          id: '3',
-          name: 'م. محمد حسن',
-          title: 'مهندس زراعي متخصص',
-          image: 'https://i.pravatar.cc/150?img=13',
-          rating: 4.8,
-          price: 130,
-          originalPrice: 170,
-          consultationsCount: '120+',
-          specialty: 'التكنولوجيا الزراعية',
-          description: 'خبير في أنظمة الري الحديثة والزراعة الذكية'
-        },
-        {
-          id: '4',
-          name: 'د. سارة إبراهيم',
-          title: 'استشارية التغذية النباتية',
-          image: 'https://i.pravatar.cc/150?img=14',
-          rating: 4.9,
-          price: 160,
-          originalPrice: 210,
-          consultationsCount: '180+',
-          specialty: 'تغذية النباتات',
-          description: 'متخصصة في الأسمدة العضوية وتحسين جودة التربة'
-        }
-      ];
-
-      // محاولة جلب البيانات من قاعدة البيانات أولاً
-      const { data: profilesData, error } = await supabase
+      // جلب المستشارين الحقيقيين من قاعدة البيانات
+      const { data: realConsultants, error } = await supabase
         .from('profiles')
         .select('*')
+        .in('role', ['admin', 'moderator'])
         .eq('is_active', true)
-        .limit(10);
+        .order('created_at', { ascending: false });
       
       if (error) {
         console.error('خطأ في جلب المستشارين:', error);
-        // استخدم البيانات الوهمية في حالة وجود خطأ
-        setConsultants(dummyConsultants);
-      } else if (profilesData && profilesData.length > 0) {
+      }
+
+      let formattedConsultants: Consultant[] = [];
+
+      if (realConsultants && realConsultants.length > 0) {
         // تحويل البيانات الحقيقية إلى التنسيق المطلوب
-        const realConsultants: Consultant[] = profilesData.map((profile, index) => ({
+        formattedConsultants = realConsultants.map((profile, index) => ({
           id: profile.id,
-          name: `${profile.first_name || 'مستشار'} ${profile.last_name || 'زراعي'}`,
+          name: `${profile.first_name || 'د.'} ${profile.last_name || 'مستشار زراعي'}`,
           title: profile.role === 'admin' 
-            ? 'أستاذ زراعي بجامعة طنطا' 
+            ? 'أستاذ الزراعة بجامعة طنطا' 
             : profile.role === 'moderator'
             ? 'خبير زراعي من جامعة طنطا'
             : 'باحث في الزراعة بجامعة طنطا',
           image: profile.avatar_url || `https://i.pravatar.cc/150?img=${11 + (index % 10)}`,
           rating: 4.5 + (Math.random() * 0.5),
-          price: 140 + (index * 10),
-          originalPrice: 180 + (index * 20),
-          consultationsCount: `${100 + (index * 50)}+`,
+          price: profile.phone_price || 120,
+          originalPrice: profile.phone_price ? profile.phone_price + 50 : 170,
+          consultationsCount: `${100 + (index * 30)}+`,
           specialty: getSpecialtyByRole(profile.role),
-          description: profile.bio || getDescriptionByRole(profile.role)
+          description: profile.bio || getDescriptionByRole(profile.role),
+          phone_price: profile.phone_price || 120,
+          video_price: profile.video_price || 150,
+          field_visit_price: profile.field_visit_price || 300
         }));
-        
-        // دمج البيانات الحقيقية مع الوهمية
-        setConsultants([...realConsultants, ...dummyConsultants]);
-      } else {
-        // استخدم البيانات الوهمية إذا لم توجد بيانات حقيقية
-        setConsultants(dummyConsultants);
       }
-    } catch (err) {
-      console.error('خطأ عام في جلب المستشارين:', err);
-      // استخدم البيانات الوهمية في حالة حدوث خطأ
+
+      // إضافة مستشارين وهميين إضافيين إذا لزم الأمر
       const dummyConsultants: Consultant[] = [
         {
-          id: '1',
+          id: 'dummy-1',
           name: 'د. أحمد المنصور',
           title: 'أستاذ الزراعة بجامعة طنطا',
           image: 'https://i.pravatar.cc/150?img=11',
@@ -145,10 +95,13 @@ const BookConsultation = () => {
           originalPrice: 200,
           consultationsCount: '200+',
           specialty: 'الزراعة المستدامة',
-          description: 'خبير في تحسين المحاصيل وإدارة المزارع بطرق مستدامة'
+          description: 'خبير في تحسين المحاصيل وإدارة المزارع بطرق مستدامة',
+          phone_price: 150,
+          video_price: 180,
+          field_visit_price: 350
         },
         {
-          id: '2',
+          id: 'dummy-2',
           name: 'د. فاطمة عبدالله',
           title: 'خبيرة الثروة الحيوانية',
           image: 'https://i.pravatar.cc/150?img=12',
@@ -157,34 +110,35 @@ const BookConsultation = () => {
           originalPrice: 180,
           consultationsCount: '150+',
           specialty: 'رعاية الحيوانات',
-          description: 'متخصصة في أمراض الحيوانات والتغذية السليمة'
-        },
-        {
-          id: '3',
-          name: 'م. محمد حسن',
-          title: 'مهندس زراعي متخصص',
-          image: 'https://i.pravatar.cc/150?img=13',
-          rating: 4.8,
-          price: 130,
-          originalPrice: 170,
-          consultationsCount: '120+',
-          specialty: 'التكنولوجيا الزراعية',
-          description: 'خبير في أنظمة الري الحديثة والزراعة الذكية'
-        },
-        {
-          id: '4',
-          name: 'د. سارة إبراهيم',
-          title: 'استشارية التغذية النباتية',
-          image: 'https://i.pravatar.cc/150?img=14',
-          rating: 4.9,
-          price: 160,
-          originalPrice: 210,
-          consultationsCount: '180+',
-          specialty: 'تغذية النباتات',
-          description: 'متخصصة في الأسمدة العضوية وتحسين جودة التربة'
+          description: 'متخصصة في أمراض الحيوانات والتغذية السليمة',
+          phone_price: 140,
+          video_price: 170,
+          field_visit_price: 320
         }
       ];
-      setConsultants(dummyConsultants);
+
+      setConsultants([...formattedConsultants, ...dummyConsultants]);
+    } catch (err) {
+      console.error('خطأ عام في جلب المستشارين:', err);
+      // استخدم البيانات الوهمية في حالة حدوث خطأ
+      const fallbackConsultants: Consultant[] = [
+        {
+          id: 'fallback-1',
+          name: 'د. أحمد المنصور',
+          title: 'أستاذ الزراعة بجامعة طنطا',
+          image: 'https://i.pravatar.cc/150?img=11',
+          rating: 5,
+          price: 150,
+          originalPrice: 200,
+          consultationsCount: '200+',
+          specialty: 'الزراعة المستدامة',
+          description: 'خبير في تحسين المحاصيل وإدارة المزارع بطرق مستدامة',
+          phone_price: 150,
+          video_price: 180,
+          field_visit_price: 350
+        }
+      ];
+      setConsultants(fallbackConsultants);
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,9 +33,7 @@ export const useCart = () => {
       const { data, error } = await supabase
         .from('cart_items')
         .select(`
-          id,
-          product_id,
-          quantity,
+          *,
           products:product_id (
             id,
             name,
@@ -81,7 +78,7 @@ export const useCart = () => {
     try {
       console.log('إضافة منتج للسلة:', { productId, quantity, userId: user.id });
 
-      // Check if item already exists in cart
+      // التحقق من وجود المنتج في السلة
       const { data: existingItems, error: fetchError } = await supabase
         .from('cart_items')
         .select('id, quantity')
@@ -94,7 +91,7 @@ export const useCart = () => {
       }
 
       if (existingItems && existingItems.length > 0) {
-        // Update existing item
+        // تحديث المنتج الموجود
         const existingItem = existingItems[0];
         const { error: updateError } = await supabase
           .from('cart_items')
@@ -106,7 +103,7 @@ export const useCart = () => {
           throw updateError;
         }
       } else {
-        // Insert new item
+        // إضافة منتج جديد
         const { error: insertError } = await supabase
           .from('cart_items')
           .insert({
