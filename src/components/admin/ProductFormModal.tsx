@@ -95,10 +95,10 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `products/${fileName}`;
+      const filePath = `${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('agriwise')
+        .from('products')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -110,7 +110,7 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
       }
 
       const { data: { publicUrl } } = supabase.storage
-        .from('agriwise')
+        .from('products')
         .getPublicUrl(filePath);
 
       if (!publicUrl) {
@@ -142,15 +142,14 @@ const ProductFormModal = ({ open, onOpenChange, product, onSuccess }: ProductFor
     const imageUrl = formData.images[index];
     
     // Extract file path from URL for deletion
-    if (imageUrl.includes('agriwise')) {
+    if (imageUrl.includes('products')) {
       try {
         const urlParts = imageUrl.split('/');
         const fileName = urlParts[urlParts.length - 1];
-        const filePath = `products/${fileName}`;
         
         await supabase.storage
-          .from('agriwise')
-          .remove([filePath]);
+          .from('products')
+          .remove([fileName]);
       } catch (error) {
         console.error('Error removing image from storage:', error);
       }
