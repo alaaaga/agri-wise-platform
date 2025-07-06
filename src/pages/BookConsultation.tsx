@@ -73,7 +73,7 @@ const BookConsultation = () => {
           image: profile.avatar_url || `https://i.pravatar.cc/150?img=${11 + (index % 10)}`,
           rating: 4.5 + (Math.random() * 0.5),
           price: profile.phone_price || 120,
-          originalPrice: profile.phone_price ? profile.phone_price + 50 : 170,
+          originalPrice: (profile.phone_price || 120) + 50,
           consultationsCount: `${100 + (index * 30)}+`,
           specialty: getSpecialtyByRole(profile.role),
           description: profile.bio || getDescriptionByRole(profile.role),

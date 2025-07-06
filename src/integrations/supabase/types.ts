@@ -558,42 +558,51 @@ export type Database = {
           bio: string | null
           created_at: string | null
           email: string | null
+          field_visit_price: number | null
           first_name: string | null
           id: string
           is_active: boolean | null
           last_name: string | null
           newsletter_subscribed: boolean | null
           permissions: Json | null
+          phone_price: number | null
           role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string | null
+          video_price: number | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           email?: string | null
+          field_visit_price?: number | null
           first_name?: string | null
           id: string
           is_active?: boolean | null
           last_name?: string | null
           newsletter_subscribed?: boolean | null
           permissions?: Json | null
+          phone_price?: number | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
+          video_price?: number | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
           email?: string | null
+          field_visit_price?: number | null
           first_name?: string | null
           id?: string
           is_active?: boolean | null
           last_name?: string | null
           newsletter_subscribed?: boolean | null
           permissions?: Json | null
+          phone_price?: number | null
           role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string | null
+          video_price?: number | null
         }
         Relationships: []
       }
