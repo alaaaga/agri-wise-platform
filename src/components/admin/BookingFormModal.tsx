@@ -25,6 +25,9 @@ import { format } from 'date-fns';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { BookingDetails } from '@/types/booking';
+import { Database } from '@/integrations/supabase/types';
+
+type BookingStatus = Database['public']['Enums']['booking_status'];
 
 interface BookingFormModalProps {
   open: boolean;
@@ -43,7 +46,7 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
     description: '',
     booking_time: '',
     service_type: '',
-    status: 'pending',
+    status: 'pending' as BookingStatus,
     price: '',
     duration: '',
     notes: ''
@@ -56,7 +59,7 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
         description: booking.description || '',
         booking_time: booking.booking_time || '',
         service_type: booking.service_type || '',
-        status: booking.status || 'pending',
+        status: (booking.status as BookingStatus) || 'pending',
         price: booking.price?.toString() || '',
         duration: booking.duration?.toString() || '',
         notes: booking.notes || ''
@@ -116,7 +119,7 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
         // Create new booking
         const { error: insertError } = await supabase
           .from('bookings')
-          .insert([bookingData]);
+          .insert(bookingData);
         error = insertError;
       }
 
@@ -258,7 +261,7 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
               </Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={(value: BookingStatus) => setFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
