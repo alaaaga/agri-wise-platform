@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -251,18 +252,18 @@ const Checkout = () => {
                       {language === 'en' ? 'Quantity:' : 'الكمية:'} {item.quantity} {item.product.unit || 'وحدة'}
                     </p>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {language === 'en' ? 'Unit price:' : 'سعر الوحدة:'} {item.product.price.toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
+                      {language === 'en' ? 'Unit price:' : 'سعر الوحدة:'} {item.product.price.toFixed(2)} جنيه
                     </p>
                   </div>
                   <p className="font-semibold">
-                    {(item.product.price * item.quantity).toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}
+                    {(item.product.price * item.quantity).toFixed(2)} جنيه
                   </p>
                 </div>
               ))}
               <hr />
               <div className="flex justify-between text-lg font-bold">
                 <span>{language === 'en' ? 'Total:' : 'المجموع:'}</span>
-                <span>{getCartTotal().toFixed(2)} {language === 'en' ? 'EGP' : 'جنيه'}</span>
+                <span>{getCartTotal().toFixed(2)} جنيه</span>
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                 <p>{language === 'en' ? 'Cash on delivery available' : 'الدفع عند الاستلام متاح'}</p>

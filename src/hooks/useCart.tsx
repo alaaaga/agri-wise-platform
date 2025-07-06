@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -139,7 +140,8 @@ export const useCart = () => {
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('user_id', user?.id); // إضافة التحقق من المستخدم
 
       if (error) throw error;
 
@@ -155,7 +157,8 @@ export const useCart = () => {
       const { error } = await supabase
         .from('cart_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('user_id', user?.id); // إضافة التحقق من المستخدم
 
       if (error) throw error;
 

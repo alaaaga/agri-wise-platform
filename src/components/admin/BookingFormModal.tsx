@@ -94,6 +94,14 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
     setLoading(true);
 
     try {
+      // الحصول على المستخدم الحالي
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error(language === 'en' ? 'Please login to create booking' : 'يرجى تسجيل الدخول لإنشاء الحجز');
+        return;
+      }
+
       const bookingData = {
         title: formData.title,
         description: formData.description || null,
@@ -103,7 +111,8 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
         status: formData.status,
         price: formData.price ? parseFloat(formData.price) : null,
         duration: formData.duration ? parseInt(formData.duration) : null,
-        notes: formData.notes || null
+        notes: formData.notes || null,
+        client_id: user.id // إضافة معرف العميل
       };
 
       let error;
@@ -132,6 +141,7 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
       );
       
       onSuccess();
+      onOpenChange(false);
     } catch (err) {
       console.error('Error saving booking:', err);
       toast.error(language === 'en' ? 'Failed to save booking' : 'فشل في حفظ الحجز');
@@ -179,13 +189,13 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="phone">
-                    {language === 'en' ? 'Phone Consultation' : 'استشارة هاتفية'}
+                    {language === 'en' ? 'Phone Consultation (120 EGP)' : 'استشارة هاتفية (120 جنيه)'}
                   </SelectItem>
                   <SelectItem value="video">
-                    {language === 'en' ? 'Video Consultation' : 'استشارة مرئية'}
+                    {language === 'en' ? 'Video Consultation (150 EGP)' : 'استشارة مرئية (150 جنيه)'}
                   </SelectItem>
                   <SelectItem value="field_visit">
-                    {language === 'en' ? 'Field Visit' : 'زيارة ميدانية'}
+                    {language === 'en' ? 'Field Visit (300 EGP)' : 'زيارة ميدانية (300 جنيه)'}
                   </SelectItem>
                 </SelectContent>
               </Select>

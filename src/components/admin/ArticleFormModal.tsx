@@ -52,6 +52,37 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
     status: 'published' as ContentStatus
   });
 
+  // بيانات المقالات الجاهزة للإضافة
+  const sampleArticles = [
+    {
+      category: 'irrigation',
+      title_en: 'Smart Irrigation Systems for Modern Agriculture',
+      title_ar: 'أنظمة الري الذكية للزراعة الحديثة',
+      content_en: 'Smart irrigation systems represent a revolutionary approach to water management in agriculture. These systems use sensors, weather data, and automated controls to optimize water usage while maximizing crop yields. By monitoring soil moisture levels, temperature, and humidity, farmers can ensure their crops receive the exact amount of water needed at the right time. This precision approach not only conserves water but also reduces costs and improves crop quality. Modern smart irrigation systems can be controlled remotely through mobile applications, allowing farmers to manage their irrigation schedules from anywhere. The integration of AI and machine learning helps predict optimal watering times based on historical data and current conditions.',
+      content_ar: 'تمثل أنظمة الري الذكية نهجاً ثورياً في إدارة المياه في الزراعة. تستخدم هذه الأنظمة أجهزة الاستشعار وبيانات الطقس والضوابط الآلية لتحسين استخدام المياه مع تعظيم غلة المحاصيل. من خلال مراقبة مستويات رطوبة التربة ودرجة الحرارة والرطوبة، يمكن للمزارعين ضمان حصول محاصيلهم على الكمية الدقيقة من المياه المطلوبة في الوقت المناسب. هذا النهج الدقيق لا يحافظ على المياه فحسب، بل يقلل أيضاً من التكاليف ويحسن جودة المحاصيل. يمكن التحكم في أنظمة الري الذكية الحديثة عن بُعد من خلال تطبيقات الهاتف المحمول، مما يتيح للمزارعين إدارة جداول الري من أي مكان. يساعد دمج الذكاء الاصطناعي والتعلم الآلي في التنبؤ بأوقات الري المثلى بناءً على البيانات التاريخية والظروف الحالية.',
+      excerpt_en: 'Learn how smart irrigation systems can revolutionize your farming practices with precision water management.',
+      excerpt_ar: 'تعلم كيف يمكن لأنظمة الري الذكية أن تحدث ثورة في ممارساتك الزراعية من خلال إدارة المياه الدقيقة.'
+    },
+    {
+      category: 'livestock',
+      title_en: 'Modern Cattle Management: Health and Nutrition',
+      title_ar: 'إدارة الماشية الحديثة: الصحة والتغذية',
+      content_en: 'Effective cattle management requires a comprehensive approach to health and nutrition. Modern farming practices emphasize preventive healthcare, balanced nutrition, and comfortable living conditions for livestock. Regular health monitoring helps identify potential issues before they become serious problems. A well-balanced diet tailored to the specific needs of different cattle breeds and life stages is crucial for optimal growth and milk production. Proper housing with adequate ventilation, clean water access, and comfortable resting areas significantly impacts cattle welfare and productivity. Technology integration, including health monitoring sensors and automated feeding systems, helps farmers maintain consistent care standards while reducing labor costs.',
+      content_ar: 'تتطلب إدارة الماشية الفعالة نهجاً شاملاً للصحة والتغذية. تركز الممارسات الزراعية الحديثة على الرعاية الصحية الوقائية والتغذية المتوازنة وظروف المعيشة المريحة للماشية. تساعد المراقبة الصحية المنتظمة في تحديد المشاكل المحتملة قبل أن تصبح مشاكل خطيرة. النظام الغذائي المتوازن المصمم خصيصاً لتلبية الاحتياجات المحددة لسلالات الماشية المختلفة ومراحل الحياة أمر بالغ الأهمية للنمو الأمثل وإنتاج الحليب. الإسكان المناسب مع التهوية الكافية والوصول للمياه النظيفة ومناطق الراحة المريحة يؤثر بشكل كبير على رفاهية الماشية والإنتاجية. يساعد دمج التكنولوجيا، بما في ذلك أجهزة استشعار مراقبة الصحة وأنظمة التغذية الآلية، المزارعين في الحفاظ على معايير الرعاية المتسقة مع تقليل تكاليف العمالة.',
+      excerpt_en: 'Comprehensive guide to modern cattle management focusing on health monitoring and nutritional requirements.',
+      excerpt_ar: 'دليل شامل لإدارة الماشية الحديثة يركز على مراقبة الصحة والاحتياجات الغذائية.'
+    },
+    {
+      category: 'organic-farming',
+      title_en: 'Transitioning to Organic Farming: A Complete Guide',
+      title_ar: 'التحول إلى الزراعة العضوية: دليل شامل',
+      content_en: 'Transitioning to organic farming is a significant decision that requires careful planning and patience. The conversion process typically takes 2-3 years to meet organic certification standards. During this transition period, farmers must eliminate synthetic pesticides, herbicides, and fertilizers while building soil health through natural methods. Crop rotation, cover cropping, and composting become essential practices. Market research is crucial to identify demand for organic products and establish distribution channels. Financial planning must account for initial yield reductions and certification costs. However, the long-term benefits include premium pricing, improved soil health, reduced input costs, and environmental sustainability.',
+      content_ar: 'التحول إلى الزراعة العضوية قرار مهم يتطلب تخطيطاً دقيقاً وصبراً. تستغرق عملية التحول عادة 2-3 سنوات لتلبية معايير الشهادة العضوية. خلال فترة التحول هذه، يجب على المزارعين التخلص من المبيدات الحشرية ومبيدات الأعشاب والأسمدة الاصطناعية مع بناء صحة التربة من خلال الطرق الطبيعية. تصبح دورة المحاصيل وزراعة المحاصيل الغطائية والتسميد ممارسات أساسية. يعد بحث السوق أمراً بالغ الأهمية لتحديد الطلب على المنتجات العضوية وإنشاء قنوات التوزيع. يجب أن يأخذ التخطيط المالي في الاعتبار انخفاض الإنتاج الأولي وتكاليف الشهادة. ومع ذلك، تشمل الفوائد طويلة المدى التسعير المتميز وتحسين صحة التربة وتقليل تكاليف المدخلات والاستدامة البيئية.',
+      excerpt_en: 'Step-by-step guide for farmers looking to transition from conventional to organic farming practices.',
+      excerpt_ar: 'دليل خطوة بخطوة للمزارعين الذين يتطلعون للانتقال من الممارسات الزراعية التقليدية إلى العضوية.'
+    }
+  ];
+
   useEffect(() => {
     if (article) {
       setFormData({
@@ -79,6 +110,15 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
       });
     }
   }, [article, open]);
+
+  const fillSampleData = () => {
+    const randomArticle = sampleArticles[Math.floor(Math.random() * sampleArticles.length)];
+    setFormData({
+      ...formData,
+      ...randomArticle,
+      image_url: formData.image_url || 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?ixlib=rb-4.0.3&auto=format&fit=crop&w=1470&q=80'
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,6 +233,12 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="flex gap-2 mb-4">
+            <Button type="button" variant="outline" onClick={fillSampleData}>
+              {language === 'en' ? 'Fill Sample Data' : 'ملء بيانات نموذجية'}
+            </Button>
+          </div>
+
           <div className="grid grid-cols-1 gap-4">
             <div>
               <Label htmlFor="category" className="text-sm font-medium">
@@ -238,55 +284,12 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
             </div>
           </div>
 
-          <Tabs defaultValue="en" className="w-full">
+          <Tabs defaultValue="ar" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="en">English</TabsTrigger>
               <TabsTrigger value="ar">العربية</TabsTrigger>
+              <TabsTrigger value="en">English</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="en" className="space-y-4">
-              <div>
-                <Label htmlFor="title_en" className="text-sm font-medium">
-                  Title (English) <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="title_en"
-                  value={formData.title_en}
-                  onChange={(e) => setFormData({...formData, title_en: e.target.value})}
-                  placeholder="Enter article title in English"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="excerpt_en" className="text-sm font-medium">
-                  Excerpt (English)
-                </Label>
-                <Textarea
-                  id="excerpt_en"
-                  value={formData.excerpt_en}
-                  onChange={(e) => setFormData({...formData, excerpt_en: e.target.value})}
-                  placeholder="Brief description in English"
-                  rows={3}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="content_en" className="text-sm font-medium">
-                  Content (English) <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="content_en"
-                  value={formData.content_en}
-                  onChange={(e) => setFormData({...formData, content_en: e.target.value})}
-                  placeholder="Write your article content in English..."
-                  rows={10}
-                  className="mt-1"
-                />
-              </div>
-            </TabsContent>
-
             <TabsContent value="ar" className="space-y-4">
               <div>
                 <Label htmlFor="title_ar" className="text-sm font-medium">
@@ -329,6 +332,49 @@ const ArticleFormModal = ({ open, onOpenChange, article, onSuccess }: ArticleFor
                   rows={10}
                   className="mt-1"
                   dir="rtl"
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="en" className="space-y-4">
+              <div>
+                <Label htmlFor="title_en" className="text-sm font-medium">
+                  Title (English) <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="title_en"
+                  value={formData.title_en}
+                  onChange={(e) => setFormData({...formData, title_en: e.target.value})}
+                  placeholder="Enter article title in English"
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="excerpt_en" className="text-sm font-medium">
+                  Excerpt (English)
+                </Label>
+                <Textarea
+                  id="excerpt_en"
+                  value={formData.excerpt_en}
+                  onChange={(e) => setFormData({...formData, excerpt_en: e.target.value})}
+                  placeholder="Brief description in English"
+                  rows={3}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="content_en" className="text-sm font-medium">
+                  Content (English) <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="content_en"
+                  value={formData.content_en}
+                  onChange={(e) => setFormData({...formData, content_en: e.target.value})}
+                  placeholder="Write your article content in English..."
+                  rows={10}
+                  className="mt-1"
                 />
               </div>
             </TabsContent>
