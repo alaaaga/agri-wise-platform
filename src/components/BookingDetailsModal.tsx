@@ -10,29 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Clock, User, Phone, Video, MapPin, FileText, DollarSign } from 'lucide-react';
-
-interface BookingDetails {
-  id: string;
-  title: string;
-  description?: string;
-  booking_date: string;
-  booking_time: string;
-  service_type: string;
-  status: string;
-  price?: number;
-  duration?: number;
-  notes?: string;
-  client_profile?: {
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-  };
-  consultant_profile?: {
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-  };
-}
+import { BookingDetails } from '@/types/booking';
 
 interface BookingDetailsModalProps {
   booking: BookingDetails | null;

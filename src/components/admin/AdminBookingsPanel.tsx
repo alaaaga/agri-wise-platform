@@ -18,37 +18,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import BookingDetailsModal from '@/components/BookingDetailsModal';
 import BookingFormModal from './BookingFormModal';
-
-interface Booking {
-  id: string;
-  title: string;
-  description?: string;
-  booking_date: string;
-  booking_time: string;
-  service_type: string;
-  status: string;
-  price?: number;
-  duration?: number;
-  notes?: string;
-  created_at: string;
-  client_profile?: {
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-  };
-  consultant_profile?: {
-    first_name?: string;
-    last_name?: string;
-    email?: string;
-  };
-}
+import { BookingDetails } from '@/types/booking';
 
 const AdminBookingsPanel = () => {
   const { language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<BookingDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<BookingDetails | null>(null);
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
@@ -141,12 +118,12 @@ const AdminBookingsPanel = () => {
     }
   };
 
-  const handleViewDetails = (booking: Booking) => {
+  const handleViewDetails = (booking: BookingDetails) => {
     setSelectedBooking(booking);
     setDetailsModalOpen(true);
   };
 
-  const handleEditBooking = (booking: Booking) => {
+  const handleEditBooking = (booking: BookingDetails) => {
     setSelectedBooking(booking);
     setEditModalOpen(true);
   };
