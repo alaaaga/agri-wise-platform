@@ -38,6 +38,8 @@ const ProfileSettings = () => {
 
       try {
         setLoading(true);
+        console.log('جاري جلب بيانات الملف الشخصي للمستخدم:', user.id);
+        
         const { data, error } = await supabase
           .from('profiles')
           .select('first_name, last_name, bio, newsletter_subscribed')
@@ -45,10 +47,13 @@ const ProfileSettings = () => {
           .single();
         
         if (error) {
-          console.error('Error fetching profile:', error);
-          toast.error(language === 'en' 
-            ? 'Failed to load profile information' 
-            : 'فشل في تحميل معلومات الملف الشخصي');
+          console.error('خطأ في جلب الملف الشخصي:', error);
+          // إذا لم يكن هناك ملف شخصي، لا نعرض خطأ
+          if (error.code !== 'PGRST116') {
+            toast.error(language === 'en' 
+              ? 'Failed to load profile information' 
+              : 'فشل في تحميل معلومات الملف الشخصي');
+          }
           return;
         }
         
@@ -58,8 +63,10 @@ const ProfileSettings = () => {
           bio: data?.bio || '',
           newsletterSubscribed: data?.newsletter_subscribed || false
         });
+        
+        console.log('تم جلب بيانات الملف الشخصي بنجاح:', data);
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.error('خطأ عام في جلب الملف الشخصي:', error);
         toast.error(language === 'en' 
           ? 'Failed to load profile information' 
           : 'فشل في تحميل معلومات الملف الشخصي');
@@ -89,45 +96,95 @@ const ProfileSettings = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) return;
+    if (!user) {
+      toast.error(language === 'en' 
+        ? 'Please login to update your profile' 
+        : 'يرجى تسجيل الدخول لتحديث الملف الشخصي');
+      return;
+    }
     
     setSaving(true);
     
     try {
-      // Update profile information
-      const { error: updateError } = await supabase
+      console.log('جاري تحديث الملف الشخصي للمستخدم:', user.id);
+      console.log('البيانات المرسلة:', profile);
+      
+      // التحقق من وجود الملف الشخصي أولاً
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .update({
-          first_name: profile.firstName,
-          last_name: profile.lastName,
-          bio: profile.bio,
-          newsletter_subscribed: profile.newsletterSubscribed,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+        .select('id')
+        .eq('id', user.id)
+        .single();
       
-      if (updateError) throw updateError;
+      let updateError;
       
-      // Update newsletter subscription
+      if (existingProfile) {
+        // تحديث الملف الشخصي الموجود
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            first_name: profile.firstName.trim(),
+            last_name: profile.lastName.trim(),
+            bio: profile.bio.trim(),
+            newsletter_subscribed: profile.newsletterSubscribed,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+        
+        updateError = error;
+      } else {
+        // إنشاء ملف شخصي جديد
+        const { error } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            first_name: profile.firstName.trim(),
+            last_name: profile.lastName.trim(),
+            bio: profile.bio.trim(),
+            newsletter_subscribed: profile.newsletterSubscribed,
+            role: 'user',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        
+        updateError = error;
+      }
+      
+      if (updateError) {
+        console.error('خطأ في تحديث الملف الشخصي:', updateError);
+        throw updateError;
+      }
+      
+      console.log('تم تحديث الملف الشخصي بنجاح');
+      
+      // تحديث اشتراك النشرة الإخبارية
       if (profile.newsletterSubscribed) {
         const { error: subscribeError } = await supabase
           .from('newsletter_subscribers')
           .upsert({
             email: user.email,
-            subscribed: true
+            subscribed: true,
+            updated_at: new Date().toISOString()
           });
         
-        if (subscribeError) console.error('Newsletter subscription error:', subscribeError);
+        if (subscribeError) {
+          console.error('خطأ في اشتراك النشرة الإخبارية:', subscribeError);
+        }
       }
       
-      // Refresh user session to update metadata
-      await refreshSession();
+      // تحديث الجلسة
+      if (refreshSession) {
+        await refreshSession();
+      }
       
       toast.success(language === 'en'
         ? 'Profile updated successfully'
         : 'تم تحديث الملف الشخصي بنجاح');
+        
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('خطأ في تحديث الملف الشخصي:', error);
       toast.error(language === 'en'
         ? 'Failed to update profile'
         : 'فشل في تحديث الملف الشخصي');
@@ -156,6 +213,9 @@ const ProfileSettings = () => {
             {loading ? (
               <div className="flex justify-center items-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-2">
+                  {language === 'en' ? 'Loading...' : 'جاري التحميل...'}
+                </span>
               </div>
             ) : (
               <>

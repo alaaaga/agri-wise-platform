@@ -35,6 +35,9 @@ interface Consultant {
   image: string;
   price: number;
   specialty?: string;
+  phone_price?: number;
+  video_price?: number;
+  field_visit_price?: number;
 }
 
 interface BookingModalProps {
@@ -66,6 +69,26 @@ export const BookingModal = ({
     '09:00 AM', '10:00 AM', '11:00 AM',
     '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM',
   ];
+
+  // حساب السعر الحالي بناءً على نوع الاستشارة
+  const getCurrentPrice = () => {
+    if (!consultant) return 0;
+    
+    switch (consultationType) {
+      case 'video':
+        return consultant.video_price || consultant.price || 150;
+      case 'voice':
+        return consultant.phone_price || consultant.price || 120;
+      case 'field_visit':
+        return consultant.field_visit_price || consultant.price || 300;
+      default:
+        return consultant.price || 150;
+    }
+  };
+
+  const handleConsultationTypeChange = (type: string) => {
+    setConsultationType(type);
+  };
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +123,8 @@ export const BookingModal = ({
     setIsSubmitting(true);
     
     try {
+      const currentPrice = getCurrentPrice();
+      
       console.log('Creating booking with data:', {
         client_id: user.id,
         consultant_id: consultant.id,
@@ -108,7 +133,7 @@ export const BookingModal = ({
         service_type: consultationType,
         title: `${language === 'en' ? 'Consultation with' : 'استشارة مع'} ${consultant.name}`,
         description: message || null,
-        price: consultant.price,
+        price: currentPrice,
         status: 'pending'
       });
 
@@ -123,7 +148,7 @@ export const BookingModal = ({
           service_type: consultationType,
           title: `${language === 'en' ? 'Consultation with' : 'استشارة مع'} ${consultant.name}`,
           description: message || null,
-          price: consultant.price,
+          price: currentPrice,
           status: 'pending',
           notes: `${language === 'en' ? 'Payment method:' : 'طريقة الدفع:'} ${paymentMethod === 'credit' ? (language === 'en' ? 'Credit Card' : 'بطاقة ائتمان') : (language === 'en' ? 'Mobile Wallet' : 'محفظة إلكترونية')}`
         });
@@ -146,7 +171,7 @@ export const BookingModal = ({
         time,
         consultationType,
         message,
-        price: consultant.price,
+        price: currentPrice,
         status: 'upcoming',
         paymentMethod,
         createdAt: new Date().toISOString(),
@@ -190,6 +215,8 @@ export const BookingModal = ({
   
   if (!consultant) return null;
   
+  const currentPrice = getCurrentPrice();
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-lg">
@@ -218,7 +245,7 @@ export const BookingModal = ({
             </div>
             <div className="ml-auto">
               <span className="font-bold text-lg text-agri-dark">
-                {language === 'ar' ? `${consultant.price} ج` : `EGP ${consultant.price}`}
+                {language === 'ar' ? `${currentPrice} جنيه` : `${currentPrice} EGP`}
               </span>
             </div>
           </div>
@@ -235,40 +262,49 @@ export const BookingModal = ({
                     type="button"
                     variant={consultationType === 'video' ? 'default' : 'outline'}
                     className={cn(
-                      "flex items-center justify-center gap-2 text-xs px-2 py-2",
+                      "flex flex-col items-center justify-center gap-2 text-xs px-2 py-4 h-auto",
                       consultationType === 'video' ? 'bg-agri hover:bg-agri-dark' : ''
                     )}
-                    onClick={() => setConsultationType('video')}
+                    onClick={() => handleConsultationTypeChange('video')}
                   >
-                    <Video className="h-3 w-3" />
-                    {language === 'en' ? 'Video' : 'فيديو'}
-                    {consultationType === 'video' && <Check className="h-2 w-2 ml-1" />}
+                    <Video className="h-4 w-4" />
+                    <span>{language === 'en' ? 'Video' : 'فيديو'}</span>
+                    <span className="text-xs font-bold">
+                      {consultant.video_price || 150} {language === 'ar' ? 'جنيه' : 'EGP'}
+                    </span>
+                    {consultationType === 'video' && <Check className="h-3 w-3" />}
                   </Button>
                   <Button
                     type="button"
                     variant={consultationType === 'voice' ? 'default' : 'outline'}
                     className={cn(
-                      "flex items-center justify-center gap-2 text-xs px-2 py-2",
+                      "flex flex-col items-center justify-center gap-2 text-xs px-2 py-4 h-auto",
                       consultationType === 'voice' ? 'bg-agri hover:bg-agri-dark' : ''
                     )}
-                    onClick={() => setConsultationType('voice')}
+                    onClick={() => handleConsultationTypeChange('voice')}
                   >
-                    <Phone className="h-3 w-3" />
-                    {language === 'en' ? 'Voice' : 'صوتي'}
-                    {consultationType === 'voice' && <Check className="h-2 w-2 ml-1" />}
+                    <Phone className="h-4 w-4" />
+                    <span>{language === 'en' ? 'Voice' : 'صوتي'}</span>
+                    <span className="text-xs font-bold">
+                      {consultant.phone_price || 120} {language === 'ar' ? 'جنيه' : 'EGP'}
+                    </span>
+                    {consultationType === 'voice' && <Check className="h-3 w-3" />}
                   </Button>
                   <Button
                     type="button"
                     variant={consultationType === 'field_visit' ? 'default' : 'outline'}
                     className={cn(
-                      "flex items-center justify-center gap-2 text-xs px-2 py-2",
+                      "flex flex-col items-center justify-center gap-2 text-xs px-2 py-4 h-auto",
                       consultationType === 'field_visit' ? 'bg-agri hover:bg-agri-dark' : ''
                     )}
-                    onClick={() => setConsultationType('field_visit')}
+                    onClick={() => handleConsultationTypeChange('field_visit')}
                   >
-                    <MapPin className="h-3 w-3" />
-                    {language === 'en' ? 'Field Visit' : 'زيارة ميدانية'}
-                    {consultationType === 'field_visit' && <Check className="h-2 w-2 ml-1" />}
+                    <MapPin className="h-4 w-4" />
+                    <span>{language === 'en' ? 'Field Visit' : 'زيارة ميدانية'}</span>
+                    <span className="text-xs font-bold">
+                      {consultant.field_visit_price || 300} {language === 'ar' ? 'جنيه' : 'EGP'}
+                    </span>
+                    {consultationType === 'field_visit' && <Check className="h-3 w-3" />}
                   </Button>
                 </div>
               </div>
@@ -393,7 +429,9 @@ export const BookingModal = ({
                     <span className="font-medium">
                       {consultationType === 'video' 
                         ? (language === 'en' ? 'Video Call' : 'مكالمة فيديو')
-                        : (language === 'en' ? 'Voice Call' : 'مكالمة صوتية')}
+                        : consultationType === 'voice'
+                        ? (language === 'en' ? 'Voice Call' : 'مكالمة صوتية')
+                        : (language === 'en' ? 'Field Visit' : 'زيارة ميدانية')}
                     </span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-yellow-200 mt-2">
@@ -401,7 +439,7 @@ export const BookingModal = ({
                       {language === 'en' ? 'Total:' : 'المجموع:'}
                     </span>
                     <span className="font-bold text-agri-dark">
-                      {language === 'ar' ? `${consultant.price} ج` : `EGP ${consultant.price}`}
+                      {language === 'ar' ? `${currentPrice} جنيه` : `${currentPrice} EGP`}
                     </span>
                   </div>
                 </div>
