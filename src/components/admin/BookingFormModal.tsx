@@ -6,117 +6,132 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
-
-interface Booking {
-  id?: string;
-  title: string;
-  service_type: string;
-  description?: string;
-  booking_date: string;
-  booking_time: string;
-  duration: number;
-  price?: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-}
+import { BookingDetails } from '@/types/booking';
 
 interface BookingFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  booking?: Booking | null;
+  booking?: BookingDetails | null;
   onSuccess: () => void;
 }
 
 const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFormModalProps) => {
   const { language } = useLanguage();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<Booking>({
+  const [date, setDate] = useState<Date>();
+  
+  const [formData, setFormData] = useState({
     title: '',
-    service_type: '',
     description: '',
-    booking_date: '',
     booking_time: '',
-    duration: 60,
-    price: 0,
-    status: 'pending'
+    service_type: '',
+    status: 'pending',
+    price: '',
+    duration: '',
+    notes: ''
   });
 
   useEffect(() => {
     if (booking) {
-      setFormData(booking);
+      setFormData({
+        title: booking.title || '',
+        description: booking.description || '',
+        booking_time: booking.booking_time || '',
+        service_type: booking.service_type || '',
+        status: booking.status || 'pending',
+        price: booking.price?.toString() || '',
+        duration: booking.duration?.toString() || '',
+        notes: booking.notes || ''
+      });
+      if (booking.booking_date) {
+        setDate(new Date(booking.booking_date));
+      }
     } else {
+      // Reset form for new booking
       setFormData({
         title: '',
-        service_type: '',
         description: '',
-        booking_date: '',
         booking_time: '',
-        duration: 60,
-        price: 0,
-        status: 'pending'
+        service_type: '',
+        status: 'pending',
+        price: '',
+        duration: '',
+        notes: ''
       });
+      setDate(undefined);
     }
-  }, [booking]);
+  }, [booking, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!date) {
+      toast.error(language === 'en' ? 'Please select a date' : 'يرجى اختيار التاريخ');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      if (booking?.id) {
-        // تحديث حجز موجود
-        const { error } = await supabase
+      const bookingData = {
+        title: formData.title,
+        description: formData.description || null,
+        booking_date: format(date, 'yyyy-MM-dd'),
+        booking_time: formData.booking_time,
+        service_type: formData.service_type,
+        status: formData.status,
+        price: formData.price ? parseFloat(formData.price) : null,
+        duration: formData.duration ? parseInt(formData.duration) : null,
+        notes: formData.notes || null
+      };
+
+      let error;
+      
+      if (booking) {
+        // Update existing booking
+        const { error: updateError } = await supabase
           .from('bookings')
-          .update({
-            title: formData.title,
-            service_type: formData.service_type,
-            description: formData.description || null,
-            booking_date: formData.booking_date,
-            booking_time: formData.booking_time,
-            duration: formData.duration,
-            price: formData.price || null,
-            status: formData.status,
-            updated_at: new Date().toISOString()
-          })
+          .update(bookingData)
           .eq('id', booking.id);
-
-        if (error) throw error;
-        toast.success(language === 'en' ? 'Booking updated successfully' : 'تم تحديث الحجز بنجاح');
+        error = updateError;
       } else {
-        // إنشاء حجز جديد
-        const { error } = await supabase
+        // Create new booking
+        const { error: insertError } = await supabase
           .from('bookings')
-          .insert({
-            title: formData.title,
-            service_type: formData.service_type,
-            description: formData.description || null,
-            booking_date: formData.booking_date,
-            booking_time: formData.booking_time,
-            duration: formData.duration,
-            price: formData.price || null,
-            status: formData.status,
-            client_id: null, // سيتم تعديله لاحقاً
-            consultant_id: null
-          });
-
-        if (error) throw error;
-        toast.success(language === 'en' ? 'Booking created successfully' : 'تم إنشاء الحجز بنجاح');
+          .insert([bookingData]);
+        error = insertError;
       }
 
+      if (error) throw error;
+
+      toast.success(
+        booking 
+          ? (language === 'en' ? 'Booking updated successfully' : 'تم تحديث الحجز بنجاح')
+          : (language === 'en' ? 'Booking created successfully' : 'تم إنشاء الحجز بنجاح')
+      );
+      
       onSuccess();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Error saving booking:', error);
-      toast.error(language === 'en' ? 'Error saving booking' : 'خطأ في حفظ الحجز');
+    } catch (err) {
+      console.error('Error saving booking:', err);
+      toast.error(language === 'en' ? 'Failed to save booking' : 'فشل في حفظ الحجز');
     } finally {
       setLoading(false);
     }
@@ -127,128 +142,187 @@ const BookingFormModal = ({ open, onOpenChange, booking, onSuccess }: BookingFor
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {booking ? 
-              (language === 'en' ? 'Edit Booking' : 'تعديل الحجز') : 
-              (language === 'en' ? 'Create Booking' : 'إنشاء حجز جديد')
+            {booking 
+              ? (language === 'en' ? 'Edit Booking' : 'تعديل الحجز')
+              : (language === 'en' ? 'Create New Booking' : 'إنشاء حجز جديد')
             }
           </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="title">{language === 'en' ? 'Title' : 'العنوان'}</Label>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => setFormData({...formData, title: e.target.value})}
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="service_type">{language === 'en' ? 'Service Type' : 'نوع الخدمة'}</Label>
-            <Select value={formData.service_type} onValueChange={(value) => setFormData({...formData, service_type: value})}>
-              <SelectTrigger>
-                <SelectValue placeholder={language === 'en' ? 'Select service' : 'اختر الخدمة'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="استشارة المحاصيل">استشارة المحاصيل</SelectItem>
-                <SelectItem value="تحليل التربة">تحليل التربة</SelectItem>
-                <SelectItem value="استشارة الثروة الحيوانية">استشارة الثروة الحيوانية</SelectItem>
-                <SelectItem value="استشارة التكنولوجيا الزراعية">استشارة التكنولوجيا الزراعية</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="booking_date">{language === 'en' ? 'Date' : 'التاريخ'}</Label>
+              <Label htmlFor="title">
+                {language === 'en' ? 'Title' : 'العنوان'}
+              </Label>
               <Input
-                id="booking_date"
-                type="date"
-                value={formData.booking_date}
-                onChange={(e) => setFormData({...formData, booking_date: e.target.value})}
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="booking_time">{language === 'en' ? 'Time' : 'الوقت'}</Label>
+              <Label htmlFor="service_type">
+                {language === 'en' ? 'Service Type' : 'نوع الخدمة'}
+              </Label>
+              <Select
+                value={formData.service_type}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, service_type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={language === 'en' ? 'Select service' : 'اختر الخدمة'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="phone">
+                    {language === 'en' ? 'Phone Consultation' : 'استشارة هاتفية'}
+                  </SelectItem>
+                  <SelectItem value="video">
+                    {language === 'en' ? 'Video Consultation' : 'استشارة مرئية'}
+                  </SelectItem>
+                  <SelectItem value="field_visit">
+                    {language === 'en' ? 'Field Visit' : 'زيارة ميدانية'}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>
+                {language === 'en' ? 'Date' : 'التاريخ'}
+              </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, 'PPP') : (language === 'en' ? 'Pick a date' : 'اختر التاريخ')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div>
+              <Label htmlFor="booking_time">
+                {language === 'en' ? 'Time' : 'الوقت'}
+              </Label>
               <Input
                 id="booking_time"
                 type="time"
                 value={formData.booking_time}
-                onChange={(e) => setFormData({...formData, booking_time: e.target.value})}
+                onChange={(e) => setFormData(prev => ({ ...prev, booking_time: e.target.value }))}
                 required
               />
             </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="duration">{language === 'en' ? 'Duration (minutes)' : 'المدة (بالدقائق)'}</Label>
+              <Label htmlFor="duration">
+                {language === 'en' ? 'Duration (minutes)' : 'المدة (دقيقة)'}
+              </Label>
               <Input
                 id="duration"
                 type="number"
                 value={formData.duration}
-                onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value) || 60})}
-                required
+                onChange={(e) => setFormData(prev => ({ ...prev, duration: e.target.value }))}
+                placeholder="60"
               />
             </div>
 
             <div>
-              <Label htmlFor="price">{language === 'en' ? 'Price (EGP)' : 'السعر (جنيه)'}</Label>
+              <Label htmlFor="price">
+                {language === 'en' ? 'Price (EGP)' : 'السعر (جنيه)'}
+              </Label>
               <Input
                 id="price"
                 type="number"
+                step="0.01"
                 value={formData.price}
-                onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
+                onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
               />
+            </div>
+
+            <div>
+              <Label htmlFor="status">
+                {language === 'en' ? 'Status' : 'الحالة'}
+              </Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">
+                    {language === 'en' ? 'Pending' : 'معلق'}
+                  </SelectItem>
+                  <SelectItem value="confirmed">
+                    {language === 'en' ? 'Confirmed' : 'مؤكد'}
+                  </SelectItem>
+                  <SelectItem value="completed">
+                    {language === 'en' ? 'Completed' : 'مكتمل'}
+                  </SelectItem>
+                  <SelectItem value="cancelled">
+                    {language === 'en' ? 'Cancelled' : 'ملغي'}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div>
-            <Label htmlFor="status">{language === 'en' ? 'Status' : 'الحالة'}</Label>
-            <Select value={formData.status} onValueChange={(value: 'pending' | 'confirmed' | 'cancelled' | 'completed') => setFormData({...formData, status: value})}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">معلق</SelectItem>
-                <SelectItem value="confirmed">مؤكد</SelectItem>
-                <SelectItem value="completed">مكتمل</SelectItem>
-                <SelectItem value="cancelled">ملغي</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="description">{language === 'en' ? 'Description' : 'الوصف'}</Label>
+            <Label htmlFor="description">
+              {language === 'en' ? 'Description' : 'الوصف'}
+            </Label>
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              rows={4}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <div>
+            <Label htmlFor="notes">
+              {language === 'en' ? 'Notes' : 'ملاحظات'}
+            </Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={loading}
+            >
               {language === 'en' ? 'Cancel' : 'إلغاء'}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {language === 'en' ? 'Saving...' : 'جاري الحفظ...'}
-                </>
-              ) : (
-                booking ? 
-                  (language === 'en' ? 'Update Booking' : 'تحديث الحجز') : 
-                  (language === 'en' ? 'Create Booking' : 'إنشاء الحجز')
-              )}
+              {loading 
+                ? (language === 'en' ? 'Saving...' : 'جاري الحفظ...')
+                : booking 
+                ? (language === 'en' ? 'Update' : 'تحديث')
+                : (language === 'en' ? 'Create' : 'إنشاء')
+              }
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
